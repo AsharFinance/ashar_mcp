@@ -21,7 +21,7 @@ export class AsharApiError extends Error {
 }
 
 async function request<T>(
-  method: "GET" | "POST",
+  method: "GET" | "POST" | "PUT" | "DELETE",
   path: string,
   body?: Record<string, unknown>,
 ): Promise<T> {
@@ -133,6 +133,82 @@ export async function getCryptoDepositAddress(asset: string, chain: string): Pro
   return request<any>("POST", "/api/custody/deposit-address", {
     asset,
     chain,
+  });
+}
+
+// ── Bank Accounts CRUD ─────────────────────────────────────────────────────────
+
+/** List user bank accounts. */
+export async function listBankAccounts(): Promise<any[]> {
+  return request<any>("GET", "/api/banking/accounts");
+}
+
+/** Create a bank account (receiver). */
+export async function createBankAccount(data: {
+  label: string;
+  country: string;
+  currency: string;
+  accountType: string;
+  beneficiary: string;
+  document?: string;
+  bankName?: string;
+  branchCode?: string;
+  accountNumber?: string;
+  routingCode?: string;
+  swift?: string;
+  iban?: string;
+  pixKey?: string;
+  pixKeyType?: string;
+}): Promise<any> {
+  return request<any>("POST", "/api/banking/accounts", data as Record<string, unknown>);
+}
+
+/** Update a bank account. */
+export async function updateBankAccount(id: string, data: Record<string, unknown>): Promise<any> {
+  return request<any>("PUT", `/api/banking/accounts/${encodeURIComponent(id)}`, data);
+}
+
+/** Delete a bank account. */
+export async function deleteBankAccount(id: string): Promise<any> {
+  return request<any>("DELETE", `/api/banking/accounts/${encodeURIComponent(id)}`);
+}
+
+// ── Fiat Remittance (Withdrawal) ───────────────────────────────────────────────
+
+/** List user remittance (fiat withdrawal) orders. */
+export async function listRemittances(): Promise<any[]> {
+  return request<any>("GET", "/api/banking/remittances");
+}
+
+/** Create a fiat withdrawal (remittance order). */
+export async function createRemittance(data: {
+  amount: number;
+  sourceCurrency: string;
+  targetCurrency: string;
+  rate?: number;
+  spreadPct?: number;
+  receivedForeign?: number;
+  beneficiaryId?: string;
+  beneficiaryName?: string;
+  bankName?: string;
+  accountType?: string;
+  iban?: string;
+  swift?: string;
+}): Promise<any> {
+  return request<any>("POST", "/api/banking/remittances", {
+    amountBrl: data.amount,
+    sourceCurrency: data.sourceCurrency,
+    targetCurrency: data.targetCurrency,
+    rate: data.rate ?? null,
+    spreadPct: data.spreadPct ?? null,
+    spreadCostBrl: data.spreadPct ? (data.amount * data.spreadPct) / 100 : null,
+    receivedForeign: data.receivedForeign ?? null,
+    beneficiaryId: data.beneficiaryId ?? null,
+    beneficiaryName: data.beneficiaryName ?? null,
+    bankName: data.bankName ?? null,
+    accountType: data.accountType ?? null,
+    iban: data.iban ?? null,
+    swift: data.swift ?? null,
   });
 }
 

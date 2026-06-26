@@ -7,6 +7,8 @@
  *   - Conversao entre BRL, USD, EUR, USDT, USDC
  *   - Saque USDT / USDC
  *   - Deposito USDT / USDC
+ *   - Cadastro de contas bancarias (receivers)
+ *   - Saque fiat USD / EUR / BRL
  *
  * Autenticacao: Bearer token via ASHAR_API_KEY.
  *
@@ -21,6 +23,8 @@ import { registerBrlDepositTools } from "./tools/brlDeposit.js";
 import { registerConversionTools } from "./tools/conversion.js";
 import { registerCryptoWithdrawalTools } from "./tools/cryptoWithdrawal.js";
 import { registerCryptoDepositTools } from "./tools/cryptoDeposit.js";
+import { registerBankAccountTools } from "./tools/bankAccounts.js";
+import { registerFiatWithdrawalTools } from "./tools/fiatWithdrawal.js";
 
 // ── Validate required env vars ────────────────────────────────────────────────
 
@@ -57,6 +61,8 @@ registerBrlDepositTools(server);
 registerConversionTools(server);
 registerCryptoWithdrawalTools(server);
 registerCryptoDepositTools(server);
+registerBankAccountTools(server);
+registerFiatWithdrawalTools(server);
 
 // ── stdio transport (default for local use) ───────────────────────────────────
 

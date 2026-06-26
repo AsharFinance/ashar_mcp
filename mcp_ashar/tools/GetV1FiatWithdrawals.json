@@ -1,0 +1,17 @@
+{
+  "name": "GetV1FiatWithdrawals",
+  "description": "Retrieve Fiat Withdrawals (Remittances)",
+  "arguments": {
+    "type": "object",
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Ashar API key (Bearer token)"
+      }
+    },
+    "required": [
+      "api_key"
+    ]
+  }
+}

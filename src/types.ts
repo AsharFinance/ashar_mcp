@@ -111,6 +111,48 @@ export interface CryptoDepositAddress {
   createdAt: string;
 }
 
+export interface BankAccount {
+  id: string;
+  userId: string;
+  label: string;
+  country: string;
+  currency: string;
+  accountType: string;
+  beneficiary: string;
+  document: string | null;
+  bankName: string | null;
+  branchCode: string | null;
+  accountNumber: string | null;
+  routingCode: string | null;
+  swift: string | null;
+  iban: string | null;
+  pixKey: string | null;
+  pixKeyType: string | null;
+  isFavorite: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RemittanceOrder {
+  id: string;
+  userId: string;
+  amountBrl: string;
+  targetCurrency: string;
+  sourceCurrency: string;
+  rate: string | null;
+  spreadPct: string;
+  spreadCostBrl: string | null;
+  receivedForeign: string | null;
+  beneficiaryId: string | null;
+  beneficiaryName: string | null;
+  bankName: string | null;
+  accountType: string | null;
+  iban: string | null;
+  swift: string | null;
+  status: string;
+  createdAt: string;
+}
+
 // ── Pagination ────────────────────────────────────────────────────────────────
 
 export interface PaginatedResponse<T> {
@@ -228,3 +270,97 @@ export type ConversionCreateInput = z.infer<typeof ConversionCreateInputSchema>;
 export type CryptoWithdrawalCreateInput = z.infer<typeof CryptoWithdrawalCreateInputSchema>;
 export type CryptoWithdrawalStatusInput = z.infer<typeof CryptoWithdrawalStatusInputSchema>;
 export type CryptoDepositAddressInput = z.infer<typeof CryptoDepositAddressInputSchema>;
+
+// ── Bank Account Schemas ──────────────────────────────────────────────────────
+
+export const BankAccountListInputSchema = z
+  .object({
+    response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
+  })
+  .strict();
+
+export const BankAccountCreateInputSchema = z
+  .object({
+    label: z.string().min(1, "label is required").describe("Nome/apelido da conta"),
+    country: z.string().min(2, "country is required").describe("Pais ISO (ex: BR, US, PT)"),
+    currency: z.enum(["BRL", "USD", "EUR"]).describe("Moeda da conta"),
+    account_type: z.enum(["CHECKING", "SAVINGS"]).describe("Tipo de conta: CHECKING ou SAVINGS"),
+    beneficiary: z.string().min(1, "beneficiary is required").describe("Nome do titular"),
+    document: z.string().optional().describe("CPF/CNPJ do titular (opcional)"),
+    bank_name: z.string().optional().describe("Nome do banco"),
+    branch_code: z.string().optional().describe("Codigo da agencia"),
+    account_number: z.string().optional().describe("Numero da conta"),
+    routing_code: z.string().optional().describe("Codigo de roteamento (ACH/ABA para USD)"),
+    swift: z.string().optional().describe("Codigo SWIFT/BIC"),
+    iban: z.string().optional().describe("IBAN (para EUR)"),
+    pix_key: z.string().optional().describe("Chave PIX (para BRL)"),
+    pix_key_type: z.string().optional().describe("Tipo da chave PIX"),
+    response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
+  })
+  .strict();
+
+export const BankAccountUpdateInputSchema = z
+  .object({
+    account_id: z.string().min(1, "account_id is required").describe("ID da conta bancaria"),
+    label: z.string().optional().describe("Novo nome/apelido"),
+    beneficiary: z.string().optional().describe("Novo nome do titular"),
+    document: z.string().optional(),
+    bank_name: z.string().optional(),
+    branch_code: z.string().optional(),
+    account_number: z.string().optional(),
+    routing_code: z.string().optional(),
+    swift: z.string().optional(),
+    iban: z.string().optional(),
+    pix_key: z.string().optional(),
+    pix_key_type: z.string().optional(),
+    account_type: z.enum(["CHECKING", "SAVINGS"]).optional(),
+    country: z.string().min(2).optional(),
+    currency: z.enum(["BRL", "USD", "EUR"]).optional(),
+    is_favorite: z.boolean().optional(),
+    response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
+  })
+  .strict();
+
+export const BankAccountDeleteInputSchema = z
+  .object({
+    account_id: z.string().min(1, "account_id is required").describe("ID da conta bancaria"),
+    response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
+  })
+  .strict();
+
+// ── Fiat Withdrawal (Remittance) Schemas ──────────────────────────────────────
+
+export const FiatWithdrawalCreateInputSchema = z
+  .object({
+    amount: z.number().positive("amount must be positive").describe("Valor a sacar"),
+    source_currency: z
+      .enum(["BRL", "USD", "EUR"])
+      .describe("Moeda de origem (saldo que sera debitado)"),
+    target_currency: z
+      .enum(["BRL", "USD", "EUR"])
+      .describe("Moeda de destino (moeda que sera recebida)"),
+    rate: z.number().positive().optional().describe("Taxa de cambio (opcional)"),
+    spread_pct: z.number().min(0).max(10).optional().describe("Spread percentual (default: 2.5%)"),
+    received_foreign: z.number().positive().optional().describe("Estimativa do valor recebido"),
+    beneficiary_id: z.string().optional().describe("ID da conta bancaria cadastrada"),
+    beneficiary_name: z.string().optional().describe("Nome do beneficiario"),
+    bank_name: z.string().optional().describe("Nome do banco destino"),
+    account_type: z.enum(["CHECKING", "SAVINGS"]).optional().describe("Tipo de conta destino"),
+    iban: z.string().optional().describe("IBAN (para EUR)"),
+    swift: z.string().optional().describe("SWIFT/BIC do banco destino"),
+    response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
+  })
+  .strict();
+
+export const FiatWithdrawalListInputSchema = z
+  .object({
+    response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
+  })
+  .strict();
+
+export type BankAccountListInput = z.infer<typeof BankAccountListInputSchema>;
+export type BankAccountCreateInput = z.infer<typeof BankAccountCreateInputSchema>;
+export type BankAccountUpdateInput = z.infer<typeof BankAccountUpdateInputSchema>;
+export type BankAccountDeleteInput = z.infer<typeof BankAccountDeleteInputSchema>;
+export type FiatWithdrawalCreateInput = z.infer<typeof FiatWithdrawalCreateInputSchema>;
+export type FiatWithdrawalListInput = z.infer<typeof FiatWithdrawalListInputSchema>;

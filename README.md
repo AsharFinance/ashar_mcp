@@ -28,6 +28,8 @@
 | **Currency Conversion** | Convert between BRL, USD, EUR, USDT, and USDC — any pair, any direction |
 | **Crypto Withdrawals** | Withdraw USDT/USDC to external wallets with multi-tier approval |
 | **Crypto Deposits** | Generate custody addresses for receiving USDT/USDC on-chain |
+| **Fiat Withdrawals** | Withdraw BRL, USD, and EUR to bank accounts via PIX, Wire, or SEPA |
+| **Bank Accounts** | Manage receiver bank accounts — create, list, edit, and delete |
 | **MCP Native** | Full MCP (Model Context Protocol) compliance via the official TypeScript SDK |
 | **Dual Mode** | Two distribution formats: JSON descriptors (Trae/BlindPay style) + standalone SDK server |
 | **Bearer Auth** | Authenticate with `ASHAR_API_KEY` — zero hardcoded credentials |

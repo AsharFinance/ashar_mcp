@@ -1,0 +1,23 @@
+{
+  "name": "DeleteV1BankAccountsById",
+  "description": "Delete Bank Account",
+  "arguments": {
+    "type": "object",
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Ashar API key (Bearer token)"
+      },
+      "id": {
+        "type": "string",
+        "minLength": 1,
+        "description": "ID of the bank account to delete"
+      }
+    },
+    "required": [
+      "api_key",
+      "id"
+    ]
+  }
+}

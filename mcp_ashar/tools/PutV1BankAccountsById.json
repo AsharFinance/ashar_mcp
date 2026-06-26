@@ -1,0 +1,61 @@
+{
+  "name": "PutV1BankAccountsById",
+  "description": "Update Bank Account",
+  "arguments": {
+    "type": "object",
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Ashar API key (Bearer token)"
+      },
+      "id": {
+        "type": "string",
+        "minLength": 1,
+        "description": "ID of the bank account to update"
+      },
+      "requestBody": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Novo nome/apelido"
+          },
+          "beneficiary": {
+            "type": "string",
+            "description": "Novo nome do titular"
+          },
+          "bank_name": {
+            "type": "string",
+            "description": "Nome do banco"
+          },
+          "account_number": {
+            "type": "string",
+            "description": "Numero da conta"
+          },
+          "swift": {
+            "type": "string",
+            "description": "Codigo SWIFT/BIC"
+          },
+          "iban": {
+            "type": "string",
+            "description": "IBAN"
+          },
+          "pix_key": {
+            "type": "string",
+            "description": "Chave PIX"
+          },
+          "is_favorite": {
+            "type": "boolean",
+            "description": "Marcar como favorita"
+          }
+        },
+        "description": "Atualiza campos de uma conta bancaria existente. Apenas os campos enviados serao alterados."
+      }
+    },
+    "required": [
+      "api_key",
+      "id"
+    ]
+  }
+}

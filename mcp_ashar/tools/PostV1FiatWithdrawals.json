@@ -1,0 +1,112 @@
+{
+  "name": "PostV1FiatWithdrawals",
+  "description": "Create Fiat Withdrawal (Remittance)",
+  "arguments": {
+    "type": "object",
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Ashar API key (Bearer token)"
+      },
+      "requestBody": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "minimum": 0.01,
+            "description": "Valor a sacar na moeda de origem"
+          },
+          "source_currency": {
+            "type": "string",
+            "enum": [
+              "BRL",
+              "USD",
+              "EUR"
+            ],
+            "description": "Moeda de origem (saldo debitado)"
+          },
+          "target_currency": {
+            "type": "string",
+            "enum": [
+              "BRL",
+              "USD",
+              "EUR"
+            ],
+            "description": "Moeda de destino (valor recebido na conta)"
+          },
+          "rate": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Taxa de cambio (opcional)"
+          },
+          "spread_pct": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Spread percentual (default: 2.5%)"
+          },
+          "beneficiary_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ID da conta bancaria pre-cadastrada (opcional)"
+          },
+          "beneficiary_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Nome do beneficiario"
+          },
+          "bank_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Nome do banco destino"
+          },
+          "account_type": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "CHECKING",
+              "SAVINGS",
+              null
+            ],
+            "description": "Tipo de conta: CHECKING ou SAVINGS"
+          },
+          "iban": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "IBAN (para EUR/SEPA)"
+          },
+          "swift": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Codigo SWIFT/BIC do banco destino"
+          }
+        },
+        "required": [
+          "amount",
+          "source_currency",
+          "target_currency"
+        ],
+        "description": "Cria uma ordem de saque fiat. Debita o saldo virtual na source_currency e envia o valor convertido para uma conta bancaria na target_currency. BRL usa PIX, USD usa Wire/ACH, EUR usa SEPA."
+      }
+    },
+    "required": [
+      "api_key"
+    ]
+  }
+}

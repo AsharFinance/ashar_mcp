@@ -1,0 +1,126 @@
+{
+  "name": "PostV1BankAccounts",
+  "description": "Create Bank Account (Receiver)",
+  "arguments": {
+    "type": "object",
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Ashar API key (Bearer token)"
+      },
+      "requestBody": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Nome/apelido da conta"
+          },
+          "country": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 2,
+            "description": "Pais ISO de 2 letras (ex: BR, US, PT)"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "BRL",
+              "USD",
+              "EUR"
+            ],
+            "description": "Moeda da conta"
+          },
+          "account_type": {
+            "type": "string",
+            "enum": [
+              "CHECKING",
+              "SAVINGS"
+            ],
+            "description": "Tipo de conta"
+          },
+          "beneficiary": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Nome do titular"
+          },
+          "document": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "CPF/CNPJ (opcional)"
+          },
+          "bank_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Nome do banco"
+          },
+          "branch_code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Codigo da agencia"
+          },
+          "account_number": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Numero da conta"
+          },
+          "routing_code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ACH/ABA routing (para USD)"
+          },
+          "swift": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Codigo SWIFT/BIC"
+          },
+          "iban": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "IBAN (para EUR)"
+          },
+          "pix_key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Chave PIX (para BRL)"
+          },
+          "pix_key_type": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Tipo da chave PIX"
+          }
+        },
+        "required": [
+          "label",
+          "country",
+          "currency",
+          "account_type",
+          "beneficiary"
+        ],
+        "description": "Cadastra uma conta bancaria como receiver/destino para saques fiat. BRL usa PIX, USD usa Wire/ACH, EUR usa SEPA/IBAN."
+      }
+    },
+    "required": [
+      "api_key"
+    ]
+  }
+}
