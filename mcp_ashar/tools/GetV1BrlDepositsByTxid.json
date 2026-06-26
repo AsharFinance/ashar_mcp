@@ -1,0 +1,23 @@
+{
+  "name": "GetV1BrlDepositsByTxid",
+  "description": "Retrieve BRL Deposit by Transaction ID",
+  "arguments": {
+    "type": "object",
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Ashar API key (Bearer token)"
+      },
+      "txid": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Transaction ID of the PIX deposit"
+      }
+    },
+    "required": [
+      "api_key",
+      "txid"
+    ]
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "name": "PostV1Conversions",
+  "description": "Create Currency Conversion",
+  "arguments": {
+    "type": "object",
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Ashar API key (Bearer token)"
+      },
+      "requestBody": {
+        "type": "object",
+        "properties": {
+          "from_currency": {
+            "type": "string",
+            "enum": [
+              "BRL",
+              "USD",
+              "EUR",
+              "USDT",
+              "USDC"
+            ],
+            "description": "Moeda de origem"
+          },
+          "to_currency": {
+            "type": "string",
+            "enum": [
+              "BRL",
+              "USD",
+              "EUR",
+              "USDT",
+              "USDC"
+            ],
+            "description": "Moeda de destino (deve ser diferente de from_currency)"
+          },
+          "amount_from": {
+            "type": "number",
+            "minimum": 0.01,
+            "description": "Valor a converter na moeda de origem"
+          },
+          "amount_to_estimate": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0.01,
+            "description": "Estimativa do valor de destino (opcional)"
+          }
+        },
+        "required": [
+          "from_currency",
+          "to_currency",
+          "amount_from"
+        ],
+        "description": "Cria uma solicitacao de conversao entre moedas. Suporta BRL, USD, EUR, USDT e USDC em qualquer direcao. A conversao fica com status PENDING ate aprovacao administrativa."
+      }
+    },
+    "required": [
+      "api_key"
+    ]
+  }
+}

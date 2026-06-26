@@ -1,0 +1,23 @@
+{
+  "name": "GetV1CryptoWithdrawalsByExternalId",
+  "description": "Retrieve Crypto Withdrawal Status",
+  "arguments": {
+    "type": "object",
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Ashar API key (Bearer token)"
+      },
+      "external_id": {
+        "type": "string",
+        "minLength": 1,
+        "description": "External ID of the withdrawal (returned on creation)"
+      }
+    },
+    "required": [
+      "api_key",
+      "external_id"
+    ]
+  }
+}

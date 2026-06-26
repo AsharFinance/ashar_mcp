@@ -1,0 +1,64 @@
+{
+  "name": "PostV1CryptoWithdrawals",
+  "description": "Create Crypto Withdrawal (USDT/USDC)",
+  "arguments": {
+    "type": "object",
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Ashar API key (Bearer token)"
+      },
+      "requestBody": {
+        "type": "object",
+        "properties": {
+          "asset": {
+            "type": "string",
+            "enum": [
+              "USDT",
+              "USDC"
+            ],
+            "description": "Ativo a sacar"
+          },
+          "chain": {
+            "type": "string",
+            "enum": [
+              "ETHEREUM",
+              "BSC",
+              "POLYGON",
+              "TRX"
+            ],
+            "description": "Blockchain de destino"
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 0.000001,
+            "description": "Quantidade a sacar"
+          },
+          "destination_address": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Endereco da carteira de destino"
+          },
+          "external_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ID externo para idempotencia (opcional)"
+          }
+        },
+        "required": [
+          "asset",
+          "chain",
+          "amount",
+          "destination_address"
+        ],
+        "description": "Cria uma solicitacao de saque de USDT ou USDC para uma carteira externa. Tiers de aprovacao: ate $1,000 = AUTO; $1,000-$10,000 = SINGLE_ADMIN; acima de $10,000 = MULTI_SIG."
+      }
+    },
+    "required": [
+      "api_key"
+    ]
+  }
+}

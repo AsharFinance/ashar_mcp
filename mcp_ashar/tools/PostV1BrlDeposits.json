@@ -1,0 +1,31 @@
+{
+  "name": "PostV1BrlDeposits",
+  "description": "Create BRL PIX Deposit",
+  "arguments": {
+    "type": "object",
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Ashar API key (Bearer token)"
+      },
+      "requestBody": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "minimum": 0.01,
+            "description": "Valor do deposito em BRL (ex: 100.00 representa R$ 100,00)"
+          }
+        },
+        "required": [
+          "amount"
+        ],
+        "description": "Cria uma cobranca PIX para deposito em BRL. Retorna o QR Code PIX (copia-e-cola)."
+      }
+    },
+    "required": [
+      "api_key"
+    ]
+  }
+}

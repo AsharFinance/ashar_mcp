@@ -1,0 +1,45 @@
+{
+  "name": "PostV1CryptoDepositAddresses",
+  "description": "Generate Crypto Deposit Address (USDT/USDC)",
+  "arguments": {
+    "type": "object",
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Ashar API key (Bearer token)"
+      },
+      "requestBody": {
+        "type": "object",
+        "properties": {
+          "asset": {
+            "type": "string",
+            "enum": [
+              "USDT",
+              "USDC"
+            ],
+            "description": "Ativo a receber"
+          },
+          "chain": {
+            "type": "string",
+            "enum": [
+              "ETHEREUM",
+              "BSC",
+              "POLYGON",
+              "TRX"
+            ],
+            "description": "Blockchain de origem"
+          }
+        },
+        "required": [
+          "asset",
+          "chain"
+        ],
+        "description": "Gera um endereco de custodia para deposito de USDT ou USDC. Envie APENAS o ativo correto na rede correta. O deposito e creditado apos as confirmacoes da blockchain."
+      }
+    },
+    "required": [
+      "api_key"
+    ]
+  }
+}
