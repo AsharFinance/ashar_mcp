@@ -6,12 +6,25 @@
     "properties": {
       "api_key": {
         "type": "string",
-        "minLength": 1,
+        "minLength": 32,
         "description": "Ashar API key (Bearer token)"
+      },
+      "currency": {
+        "type": "string",
+        "enum": ["BRL", "USD", "EUR"],
+        "description": "Filter by account currency"
+      },
+      "country": {
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 2,
+        "description": "Filter by ISO 3166-1 alpha-2 country code (e.g. BR, US, PT)"
+      },
+      "is_favorite": {
+        "type": "boolean",
+        "description": "Filter by favorite status"
       }
     },
-    "required": [
-      "api_key"
-    ]
+    "required": ["api_key"]
   }
 }

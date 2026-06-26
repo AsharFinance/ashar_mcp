@@ -6,18 +6,16 @@
     "properties": {
       "api_key": {
         "type": "string",
-        "minLength": 1,
+        "minLength": 32,
         "description": "Ashar API key (Bearer token)"
       },
       "txid": {
         "type": "string",
-        "minLength": 1,
-        "description": "Transaction ID of the PIX deposit"
+        "minLength": 8,
+        "maxLength": 128,
+        "description": "Transaction ID of the PIX deposit (returned when the deposit is created)"
       }
     },
-    "required": [
-      "api_key",
-      "txid"
-    ]
+    "required": ["api_key", "txid"]
   }
 }

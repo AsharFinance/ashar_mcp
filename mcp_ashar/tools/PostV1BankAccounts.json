@@ -6,7 +6,7 @@
     "properties": {
       "api_key": {
         "type": "string",
-        "minLength": 1,
+        "minLength": 32,
         "description": "Ashar API key (Bearer token)"
       },
       "requestBody": {
@@ -15,112 +15,83 @@
           "label": {
             "type": "string",
             "minLength": 1,
-            "description": "Nome/apelido da conta"
+            "maxLength": 128,
+            "description": "Display name for the account"
           },
           "country": {
             "type": "string",
             "minLength": 2,
             "maxLength": 2,
-            "description": "Pais ISO de 2 letras (ex: BR, US, PT)"
+            "description": "ISO 3166-1 alpha-2 country code (e.g. BR, US, PT)"
           },
           "currency": {
             "type": "string",
-            "enum": [
-              "BRL",
-              "USD",
-              "EUR"
-            ],
-            "description": "Moeda da conta"
+            "enum": ["BRL", "USD", "EUR"],
+            "description": "Account currency"
           },
           "account_type": {
             "type": "string",
-            "enum": [
-              "CHECKING",
-              "SAVINGS"
-            ],
-            "description": "Tipo de conta"
+            "enum": ["CHECKING", "SAVINGS"],
+            "description": "Type of bank account"
           },
           "beneficiary": {
             "type": "string",
             "minLength": 1,
-            "description": "Nome do titular"
+            "maxLength": 128,
+            "description": "Account holder's full name"
           },
           "document": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "CPF/CNPJ (opcional)"
+            "type": ["string", "null"],
+            "maxLength": 18,
+            "description": "Tax ID (CPF/CNPJ for Brazil, optional)"
           },
           "bank_name": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Nome do banco"
+            "type": ["string", "null"],
+            "maxLength": 128,
+            "description": "Bank name"
           },
           "branch_code": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Codigo da agencia"
+            "type": ["string", "null"],
+            "maxLength": 16,
+            "description": "Branch code"
           },
           "account_number": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Numero da conta"
+            "type": ["string", "null"],
+            "maxLength": 32,
+            "description": "Account number"
           },
           "routing_code": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "ACH/ABA routing (para USD)"
+            "type": ["string", "null"],
+            "maxLength": 16,
+            "description": "ACH/ABA routing number (for USD)"
           },
           "swift": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Codigo SWIFT/BIC"
+            "type": ["string", "null"],
+            "minLength": 8,
+            "maxLength": 11,
+            "description": "SWIFT/BIC code"
           },
           "iban": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "IBAN (para EUR)"
+            "type": ["string", "null"],
+            "minLength": 15,
+            "maxLength": 34,
+            "description": "IBAN (for EUR/SEPA)"
           },
           "pix_key": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Chave PIX (para BRL)"
+            "type": ["string", "null"],
+            "maxLength": 128,
+            "description": "PIX key (for BRL)"
           },
           "pix_key_type": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Tipo da chave PIX"
+            "type": ["string", "null"],
+            "enum": ["EMAIL", "CPF", "CNPJ", "PHONE", "RANDOM_KEY", null],
+            "description": "Type of PIX key"
           }
         },
-        "required": [
-          "label",
-          "country",
-          "currency",
-          "account_type",
-          "beneficiary"
-        ],
-        "description": "Cadastra uma conta bancaria como receiver/destino para saques fiat. BRL usa PIX, USD usa Wire/ACH, EUR usa SEPA/IBAN."
+        "required": ["label", "country", "currency", "account_type", "beneficiary"],
+        "description": "Registers a bank account as a receiver for fiat withdrawals. BRL accounts use PIX, USD accounts use Wire/ACH, and EUR accounts use SEPA/IBAN. The account can be referenced later via its ID when creating a fiat withdrawal."
       }
     },
-    "required": [
-      "api_key"
-    ]
+    "required": ["api_key"]
   }
 }

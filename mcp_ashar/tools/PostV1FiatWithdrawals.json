@@ -6,7 +6,7 @@
     "properties": {
       "api_key": {
         "type": "string",
-        "minLength": 1,
+        "minLength": 32,
         "description": "Ashar API key (Bearer token)"
       },
       "requestBody": {
@@ -15,98 +15,72 @@
           "amount": {
             "type": "number",
             "minimum": 0.01,
-            "description": "Valor a sacar na moeda de origem"
+            "description": "Amount to withdraw in the source currency"
           },
           "source_currency": {
             "type": "string",
-            "enum": [
-              "BRL",
-              "USD",
-              "EUR"
-            ],
-            "description": "Moeda de origem (saldo debitado)"
+            "enum": ["BRL", "USD", "EUR"],
+            "description": "Source currency (debited from virtual balance)"
           },
           "target_currency": {
             "type": "string",
-            "enum": [
-              "BRL",
-              "USD",
-              "EUR"
-            ],
-            "description": "Moeda de destino (valor recebido na conta)"
+            "enum": ["BRL", "USD", "EUR"],
+            "description": "Destination currency (received in the bank account)"
           },
           "rate": {
-            "type": [
-              "number",
-              "null"
-            ],
-            "description": "Taxa de cambio (opcional)"
+            "type": ["number", "null"],
+            "minimum": 0.0001,
+            "description": "Desired exchange rate (optional, Ashar provides a rate if omitted)"
           },
           "spread_pct": {
-            "type": [
-              "number",
-              "null"
-            ],
-            "description": "Spread percentual (default: 2.5%)"
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 10,
+            "description": "Spread percentage (default: 2.5%)"
+          },
+          "external_id": {
+            "type": ["string", "null"],
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Client-supplied idempotency key to prevent duplicate withdrawals"
           },
           "beneficiary_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "ID da conta bancaria pre-cadastrada (opcional)"
+            "type": ["string", "null"],
+            "maxLength": 64,
+            "description": "ID of a pre-registered bank account (use this OR the inline fields below)"
           },
           "beneficiary_name": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Nome do beneficiario"
+            "type": ["string", "null"],
+            "maxLength": 128,
+            "description": "Account holder's full name (inline, if no beneficiary_id)"
           },
           "bank_name": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Nome do banco destino"
+            "type": ["string", "null"],
+            "maxLength": 128,
+            "description": "Destination bank name (inline)"
           },
           "account_type": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "CHECKING",
-              "SAVINGS",
-              null
-            ],
-            "description": "Tipo de conta: CHECKING ou SAVINGS"
+            "type": ["string", "null"],
+            "enum": ["CHECKING", "SAVINGS"],
+            "description": "Destination account type: CHECKING or SAVINGS"
           },
           "iban": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "IBAN (para EUR/SEPA)"
+            "type": ["string", "null"],
+            "minLength": 15,
+            "maxLength": 34,
+            "description": "IBAN — required for EUR/SEPA"
           },
           "swift": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Codigo SWIFT/BIC do banco destino"
+            "type": ["string", "null"],
+            "minLength": 8,
+            "maxLength": 11,
+            "description": "SWIFT/BIC code of the destination bank"
           }
         },
-        "required": [
-          "amount",
-          "source_currency",
-          "target_currency"
-        ],
-        "description": "Cria uma ordem de saque fiat. Debita o saldo virtual na source_currency e envia o valor convertido para uma conta bancaria na target_currency. BRL usa PIX, USD usa Wire/ACH, EUR usa SEPA."
+        "required": ["amount", "source_currency", "target_currency"],
+        "description": "Creates a fiat withdrawal (remittance) order. Debits the virtual balance in source_currency and sends the converted amount to a bank account in target_currency. BRL is sent via PIX, USD via Wire/ACH, and EUR via SEPA. Use beneficiary_id to reference a pre-registered bank account, or provide account details inline."
       }
     },
-    "required": [
-      "api_key"
-    ]
+    "required": ["api_key"]
   }
 }

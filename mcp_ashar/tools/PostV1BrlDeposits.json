@@ -6,7 +6,7 @@
     "properties": {
       "api_key": {
         "type": "string",
-        "minLength": 1,
+        "minLength": 32,
         "description": "Ashar API key (Bearer token)"
       },
       "requestBody": {
@@ -15,17 +15,20 @@
           "amount": {
             "type": "number",
             "minimum": 0.01,
-            "description": "Valor do deposito em BRL (ex: 100.00 representa R$ 100,00)"
+            "description": "Deposit amount in BRL (e.g. 100.00 = R$100.00)",
+            "example": 100.00
+          },
+          "external_id": {
+            "type": ["string", "null"],
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Client-supplied idempotency key to prevent duplicate deposits"
           }
         },
-        "required": [
-          "amount"
-        ],
-        "description": "Cria uma cobranca PIX para deposito em BRL. Retorna o QR Code PIX (copia-e-cola)."
+        "required": ["amount"],
+        "description": "Creates a PIX charge for BRL deposit. Returns the PIX QR Code (copy-and-paste string). The user pays the PIX to credit BRL into their Ashar account."
       }
     },
-    "required": [
-      "api_key"
-    ]
+    "required": ["api_key"]
   }
 }

@@ -6,12 +6,13 @@
     "properties": {
       "api_key": {
         "type": "string",
-        "minLength": 1,
+        "minLength": 32,
         "description": "Ashar API key (Bearer token)"
       },
       "id": {
         "type": "string",
-        "minLength": 1,
+        "minLength": 8,
+        "maxLength": 64,
         "description": "ID of the bank account to update"
       },
       "requestBody": {
@@ -19,43 +20,49 @@
         "properties": {
           "label": {
             "type": "string",
-            "description": "Novo nome/apelido"
+            "maxLength": 128,
+            "description": "New display name"
           },
           "beneficiary": {
             "type": "string",
-            "description": "Novo nome do titular"
+            "maxLength": 128,
+            "description": "Updated account holder name"
           },
           "bank_name": {
             "type": "string",
-            "description": "Nome do banco"
+            "maxLength": 128,
+            "description": "Updated bank name"
           },
           "account_number": {
             "type": "string",
-            "description": "Numero da conta"
+            "maxLength": 32,
+            "description": "Updated account number"
           },
           "swift": {
             "type": "string",
-            "description": "Codigo SWIFT/BIC"
+            "minLength": 8,
+            "maxLength": 11,
+            "description": "Updated SWIFT/BIC code"
           },
           "iban": {
             "type": "string",
-            "description": "IBAN"
+            "minLength": 15,
+            "maxLength": 34,
+            "description": "Updated IBAN"
           },
           "pix_key": {
             "type": "string",
-            "description": "Chave PIX"
+            "maxLength": 128,
+            "description": "Updated PIX key"
           },
           "is_favorite": {
             "type": "boolean",
-            "description": "Marcar como favorita"
+            "description": "Mark as favorite"
           }
         },
-        "description": "Atualiza campos de uma conta bancaria existente. Apenas os campos enviados serao alterados."
+        "description": "Updates an existing bank account. Only the fields sent in the request body will be modified; omitted fields remain unchanged."
       }
     },
-    "required": [
-      "api_key",
-      "id"
-    ]
+    "required": ["api_key", "id"]
   }
 }

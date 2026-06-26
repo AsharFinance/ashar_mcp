@@ -1,4 +1,4 @@
 {
   "server_name": "mcp_ashar",
-  "description": "Ashar Finance — depositos, conversoes e saques em BRL, USD, EUR, USDT e USDC"
+  "description": "Ashar Finance API — manage bank accounts, PIX deposits, fiat/crypto withdrawals, and currency conversions across BRL, USD, EUR, USDT, and USDC"
 }

@@ -6,7 +6,7 @@
     "properties": {
       "api_key": {
         "type": "string",
-        "minLength": 1,
+        "minLength": 32,
         "description": "Ashar API key (Bearer token)"
       },
       "requestBody": {
@@ -14,51 +14,36 @@
         "properties": {
           "asset": {
             "type": "string",
-            "enum": [
-              "USDT",
-              "USDC"
-            ],
-            "description": "Ativo a sacar"
+            "enum": ["USDT", "USDC"],
+            "description": "Asset to withdraw"
           },
           "chain": {
             "type": "string",
-            "enum": [
-              "ETHEREUM",
-              "BSC",
-              "POLYGON",
-              "TRX"
-            ],
-            "description": "Blockchain de destino"
+            "enum": ["ETHEREUM", "BSC", "POLYGON", "TRX"],
+            "description": "Destination blockchain network"
           },
           "amount": {
             "type": "number",
             "minimum": 0.000001,
-            "description": "Quantidade a sacar"
+            "description": "Amount to withdraw"
           },
           "destination_address": {
             "type": "string",
-            "minLength": 1,
-            "description": "Endereco da carteira de destino"
+            "minLength": 26,
+            "maxLength": 128,
+            "description": "Destination wallet address"
           },
           "external_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "ID externo para idempotencia (opcional)"
+            "type": ["string", "null"],
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Client-supplied idempotency key to prevent duplicate withdrawals"
           }
         },
-        "required": [
-          "asset",
-          "chain",
-          "amount",
-          "destination_address"
-        ],
-        "description": "Cria uma solicitacao de saque de USDT ou USDC para uma carteira externa. Tiers de aprovacao: ate $1,000 = AUTO; $1,000-$10,000 = SINGLE_ADMIN; acima de $10,000 = MULTI_SIG."
+        "required": ["asset", "chain", "amount", "destination_address"],
+        "description": "Creates a USDT or USDC withdrawal to an external wallet. Approval tiers: up to $1,000 = AUTO (immediate); $1,000–$10,000 = SINGLE_ADMIN (1 approval); above $10,000 = MULTI_SIG (2 of 3 admins)."
       }
     },
-    "required": [
-      "api_key"
-    ]
+    "required": ["api_key"]
   }
 }

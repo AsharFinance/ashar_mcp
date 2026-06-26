@@ -155,6 +155,26 @@ The `mcp_ashar/` folder contains standalone JSON tool descriptors following the 
 
 > ⚠️ Send **only** the specified asset on the specified chain. Sending the wrong asset or using the wrong network may result in **permanent loss of funds**.
 
+### Bank Accounts
+
+| Tool | Description | ↔ JSON Descriptor |
+|---|---|---|
+| `ashar_listar_contas_bancarias` | List all registered bank accounts (receivers) | `GetV1BankAccounts` |
+| `ashar_criar_conta_bancaria` | Register a new bank account for fiat payouts | `PostV1BankAccounts` |
+| `ashar_editar_conta_bancaria` | Update an existing bank account | `PutV1BankAccountsById` |
+| `ashar_deletar_conta_bancaria` | Delete a bank account | `DeleteV1BankAccountsById` |
+
+**Supported currencies**: `BRL` (PIX), `USD` (Wire/ACH), `EUR` (SEPA/IBAN).
+
+### Fiat Withdrawals
+
+| Tool | Description | ↔ JSON Descriptor |
+|---|---|---|
+| `ashar_sacar_fiat` | Withdraw BRL/USD/EUR to a bank account | `PostV1FiatWithdrawals` |
+| `ashar_listar_saques_fiat` | List fiat withdrawal (remittance) orders | `GetV1FiatWithdrawals` |
+
+**Rails**: BRL → PIX / USD → Wire / EUR → SEPA. Can use a pre-registered bank account (`beneficiary_id`) or provide account details inline.
+
 ---
 
 ## 📚 API Reference
@@ -281,7 +301,7 @@ npm run clean   # Remove dist/
 ashar_mcp/
 ├── mcp_ashar/                    # JSON descriptors (Trae / BlindPay format)
 │   ├── SERVER_METADATA.json
-│   └── tools/                    # 7 JSON tool definitions
+│   └── tools/                    # 13 JSON tool definitions
 ├── src/                          # TypeScript MCP SDK server
 │   ├── index.ts                  # Entry point (stdio + HTTP)
 │   ├── types.ts                  # Type definitions & Zod schemas
@@ -291,7 +311,9 @@ ashar_mcp/
 │       ├── brlDeposit.ts         # BRL PIX deposit tools (3)
 │       ├── conversion.ts         # Currency conversion tool (1)
 │       ├── cryptoWithdrawal.ts   # Crypto withdrawal tools (2)
-│       └── cryptoDeposit.ts      # Crypto deposit tool (1)
+│       ├── cryptoDeposit.ts      # Crypto deposit tool (1)
+│       ├── bankAccounts.ts       # Bank account CRUD tools (4)
+│       └── fiatWithdrawal.ts     # Fiat withdrawal tools (2)
 ├── .env.example
 ├── .gitignore
 ├── package.json
