@@ -2,7 +2,7 @@
  * Ashar Finance API Client
  *
  * Encapsulates all HTTP calls to the Ashar management backend.
- * Authentication is done via Bearer token (API key).
+ * Authentication is done via x-api-key header.
  */
 
 const API_BASE_URL = process.env.ASHAR_API_URL || "https://api.ashar.finance";
@@ -33,7 +33,7 @@ async function request<T>(
   };
 
   if (API_KEY) {
-    headers["Authorization"] = `Bearer ${API_KEY}`;
+    headers["x-api-key"] = API_KEY;
   }
 
   const res = await fetch(url, {
