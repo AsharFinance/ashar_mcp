@@ -262,6 +262,37 @@ export const CryptoDepositAddressInputSchema = z
   })
   .strict();
 
+// ── Webhook Schemas ───────────────────────────────────────────────────────────
+
+export const WebhookListInputSchema = z
+  .object({
+    response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
+  })
+  .strict();
+
+export const WebhookCreateInputSchema = z
+  .object({
+    label: z.string().min(1, "label is required").describe("Nome/apelido do webhook (ex: 'Meu Servidor')"),
+    url: z.string().url("url must be a valid HTTPS URL").describe("URL que recebera os eventos (deve comecar com https://)"),
+    events: z.string().optional().describe("Tipos de evento separados por virgula: deposit, withdrawal, conversion, crypto_deposit, crypto_withdrawal, all (default: 'all')"),
+    response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
+  })
+  .strict();
+
+export const WebhookDeleteInputSchema = z
+  .object({
+    webhook_id: z.string().min(1, "webhook_id is required").describe("ID do webhook a remover"),
+    response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
+  })
+  .strict();
+
+export const WebhookTestInputSchema = z
+  .object({
+    webhook_id: z.string().min(1, "webhook_id is required").describe("ID do webhook a testar"),
+    response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
+  })
+  .strict();
+
 export type BalanceInput = z.infer<typeof BalanceInputSchema>;
 export type BrlDepositCreateInput = z.infer<typeof BrlDepositCreateInputSchema>;
 export type BrlDepositStatusInput = z.infer<typeof BrlDepositStatusInputSchema>;
@@ -270,6 +301,10 @@ export type ConversionCreateInput = z.infer<typeof ConversionCreateInputSchema>;
 export type CryptoWithdrawalCreateInput = z.infer<typeof CryptoWithdrawalCreateInputSchema>;
 export type CryptoWithdrawalStatusInput = z.infer<typeof CryptoWithdrawalStatusInputSchema>;
 export type CryptoDepositAddressInput = z.infer<typeof CryptoDepositAddressInputSchema>;
+export type WebhookListInput = z.infer<typeof WebhookListInputSchema>;
+export type WebhookCreateInput = z.infer<typeof WebhookCreateInputSchema>;
+export type WebhookDeleteInput = z.infer<typeof WebhookDeleteInputSchema>;
+export type WebhookTestInput = z.infer<typeof WebhookTestInputSchema>;
 
 // ── Bank Account Schemas ──────────────────────────────────────────────────────
 

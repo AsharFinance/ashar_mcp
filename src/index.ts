@@ -25,6 +25,7 @@ import { registerCryptoWithdrawalTools } from "./tools/cryptoWithdrawal.js";
 import { registerCryptoDepositTools } from "./tools/cryptoDeposit.js";
 import { registerBankAccountTools } from "./tools/bankAccounts.js";
 import { registerFiatWithdrawalTools } from "./tools/fiatWithdrawal.js";
+import { registerWebhookTools } from "./tools/webhooks.js";
 
 // ── Validate required env vars ────────────────────────────────────────────────
 
@@ -63,6 +64,7 @@ registerCryptoWithdrawalTools(server);
 registerCryptoDepositTools(server);
 registerBankAccountTools(server);
 registerFiatWithdrawalTools(server);
+registerWebhookTools(server);
 
 // ── stdio transport (default for local use) ───────────────────────────────────
 

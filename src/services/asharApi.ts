@@ -212,6 +212,32 @@ export async function createRemittance(data: {
   });
 }
 
+// ── Webhooks ───────────────────────────────────────────────────────────────────
+
+/** List user webhooks. */
+export async function listWebhooks(): Promise<any[]> {
+  return request<any>("GET", "/api/webhooks");
+}
+
+/** Create a webhook. */
+export async function createWebhook(data: {
+  label: string;
+  url: string;
+  events?: string;
+}): Promise<any> {
+  return request<any>("POST", "/api/webhooks", data as Record<string, unknown>);
+}
+
+/** Delete a webhook. */
+export async function deleteWebhook(id: string): Promise<any> {
+  return request<any>("DELETE", `/api/webhooks/${encodeURIComponent(id)}`);
+}
+
+/** Test a webhook by sending a ping event. */
+export async function testWebhook(id: string): Promise<any> {
+  return request<any>("POST", `/api/webhooks/${encodeURIComponent(id)}/test`);
+}
+
 /** Handle API errors consistently. */
 export function handleApiError(error: unknown): string {
   if (error instanceof AsharApiError) {
