@@ -80,7 +80,7 @@ Exemplos de uso:
           toCurrency: params.to_currency,
           amountFrom: params.amount_from,
           amountToEstimate: params.amount_to_estimate,
-        });
+        }, params.api_key);
 
         const record = result.record ?? result;
 

@@ -59,7 +59,7 @@ Exemplos de uso:
     },
     async (params) => {
       try {
-        const deposit = await createBrlDeposit(params.amount_brl);
+        const deposit = await createBrlDeposit(params.amount_brl, params.api_key);
 
         const output = {
           id: deposit.id,
@@ -140,7 +140,7 @@ Exemplos de uso:
     },
     async (params) => {
       try {
-        const data = await getBrlDepositStatus(params.txid);
+        const data = await getBrlDepositStatus(params.txid, params.api_key);
 
         const output = {
           id: data.id ?? null,
@@ -212,7 +212,7 @@ Exemplos de uso:
     },
     async (params) => {
       try {
-        const deposits = await listBrlDeposits(params.limit);
+        const deposits = await listBrlDeposits(params.limit, params.api_key);
 
         if (!deposits.length) {
           return {

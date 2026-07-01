@@ -78,7 +78,7 @@ Exemplos de uso:
           amount: params.amount,
           destinationAddress: params.destination_address,
           externalId: params.external_id,
-        });
+        }, params.api_key);
 
         const output = {
           id: withdrawal.id,
@@ -183,7 +183,7 @@ Exemplos de uso:
     },
     async (params) => {
       try {
-        const data = await getCryptoWithdrawalStatus(params.external_id);
+        const data = await getCryptoWithdrawalStatus(params.external_id, params.api_key);
 
         const output = {
           id: data?.id ?? null,

@@ -102,7 +102,7 @@ Exemplos de uso:
           accountType: params.account_type,
           iban: params.iban,
           swift: params.swift,
-        });
+        }, params.api_key);
 
         const output = {
           id: order.id,
@@ -185,7 +185,7 @@ Exemplos de uso:
     },
     async (params) => {
       try {
-        const orders = await listRemittances();
+        const orders = await listRemittances(params.api_key);
 
         if (!orders.length) {
           return {

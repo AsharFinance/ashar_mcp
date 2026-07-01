@@ -187,7 +187,7 @@ Exemplos de uso:
           label: params.label,
           url: params.url,
           events: params.events || 'all',
-        });
+        }, params.api_key);
 
         let text: string;
         if (params.response_format === ResponseFormat.MARKDOWN) {
@@ -310,7 +310,7 @@ Exemplos de uso:
     },
     async (params) => {
       try {
-        const result = await testWebhook(params.webhook_id);
+        const result = await testWebhook(params.webhook_id, params.api_key);
 
         let text: string;
         if (params.response_format === ResponseFormat.MARKDOWN) {

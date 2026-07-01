@@ -168,6 +168,7 @@ export interface PaginatedResponse<T> {
 
 export const BalanceInputSchema = z
   .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
     response_format: z
       .nativeEnum(ResponseFormat)
       .default(ResponseFormat.JSON)
@@ -177,6 +178,7 @@ export const BalanceInputSchema = z
 
 export const BrlDepositCreateInputSchema = z
   .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
     amount_brl: z
       .number()
       .positive("amount_brl must be a positive number")
@@ -190,6 +192,7 @@ export const BrlDepositCreateInputSchema = z
 
 export const BrlDepositStatusInputSchema = z
   .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
     txid: z.string().min(1, "txid is required").describe("Transaction ID of the deposit"),
     response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
   })
@@ -197,6 +200,7 @@ export const BrlDepositStatusInputSchema = z
 
 export const BrlDepositListInputSchema = z
   .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
     limit: z.number().int().min(1).max(100).default(30).describe("Maximum results to return"),
     response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
   })
@@ -204,6 +208,7 @@ export const BrlDepositListInputSchema = z
 
 export const ConversionCreateInputSchema = z
   .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
     from_currency: z
       .enum(["BRL", "USD", "EUR", "USDT", "USDC"])
       .describe("Moeda de origem: BRL, USD, EUR, USDT ou USDC"),
@@ -222,6 +227,7 @@ export const ConversionCreateInputSchema = z
 
 export const CryptoWithdrawalCreateInputSchema = z
   .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
     asset: z
       .enum(["USDT", "USDC"])
       .describe("Ativo a sacar: USDT ou USDC"),
@@ -244,6 +250,7 @@ export const CryptoWithdrawalCreateInputSchema = z
 
 export const CryptoWithdrawalStatusInputSchema = z
   .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
     external_id: z.string().min(1, "external_id is required").describe("External ID do saque"),
     response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
   })
@@ -251,6 +258,7 @@ export const CryptoWithdrawalStatusInputSchema = z
 
 export const CryptoDepositAddressInputSchema = z
   .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
     asset: z
       .enum(["USDT", "USDC"])
       .describe("Ativo para deposito: USDT ou USDC"),
@@ -266,12 +274,14 @@ export const CryptoDepositAddressInputSchema = z
 
 export const WebhookListInputSchema = z
   .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
     response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
   })
   .strict();
 
 export const WebhookCreateInputSchema = z
   .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
     label: z.string().min(1, "label is required").describe("Nome/apelido do webhook (ex: 'Meu Servidor')"),
     url: z.string().url("url must be a valid HTTPS URL").describe("URL que recebera os eventos (deve comecar com https://)"),
     events: z.string().optional().describe("Tipos de evento separados por virgula: deposit, withdrawal, conversion, crypto_deposit, crypto_withdrawal, all (default: 'all')"),
@@ -281,6 +291,7 @@ export const WebhookCreateInputSchema = z
 
 export const WebhookDeleteInputSchema = z
   .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
     webhook_id: z.string().min(1, "webhook_id is required").describe("ID do webhook a remover"),
     response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
   })
@@ -288,6 +299,7 @@ export const WebhookDeleteInputSchema = z
 
 export const WebhookTestInputSchema = z
   .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
     webhook_id: z.string().min(1, "webhook_id is required").describe("ID do webhook a testar"),
     response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
   })
@@ -310,12 +322,14 @@ export type WebhookTestInput = z.infer<typeof WebhookTestInputSchema>;
 
 export const BankAccountListInputSchema = z
   .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
     response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
   })
   .strict();
 
 export const BankAccountCreateInputSchema = z
   .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
     label: z.string().min(1, "label is required").describe("Nome/apelido da conta"),
     country: z.string().min(2, "country is required").describe("Pais ISO (ex: BR, US, PT)"),
     currency: z.enum(["BRL", "USD", "EUR"]).describe("Moeda da conta"),
@@ -336,6 +350,7 @@ export const BankAccountCreateInputSchema = z
 
 export const BankAccountUpdateInputSchema = z
   .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
     account_id: z.string().min(1, "account_id is required").describe("ID da conta bancaria"),
     label: z.string().optional().describe("Novo nome/apelido"),
     beneficiary: z.string().optional().describe("Novo nome do titular"),
@@ -358,6 +373,7 @@ export const BankAccountUpdateInputSchema = z
 
 export const BankAccountDeleteInputSchema = z
   .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
     account_id: z.string().min(1, "account_id is required").describe("ID da conta bancaria"),
     response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
   })
@@ -367,6 +383,7 @@ export const BankAccountDeleteInputSchema = z
 
 export const FiatWithdrawalCreateInputSchema = z
   .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
     amount: z.number().positive("amount must be positive").describe("Valor a sacar"),
     source_currency: z
       .enum(["BRL", "USD", "EUR"])
@@ -389,6 +406,7 @@ export const FiatWithdrawalCreateInputSchema = z
 
 export const FiatWithdrawalListInputSchema = z
   .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
     response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
   })
   .strict();

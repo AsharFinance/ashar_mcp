@@ -68,7 +68,7 @@ Exemplos de uso:
     },
     async (params) => {
       try {
-        const accounts = await listBankAccounts();
+        const accounts = await listBankAccounts(params.api_key);
 
         if (!accounts.length) {
           return {
@@ -195,7 +195,7 @@ Exemplos de uso:
           iban: params.iban,
           pixKey: params.pix_key,
           pixKeyType: params.pix_key_type,
-        });
+        }, params.api_key);
 
         const output = {
           id: account.id,
@@ -344,7 +344,7 @@ Exemplos de uso:
     },
     async (params) => {
       try {
-        await deleteBankAccount(params.account_id);
+        await deleteBankAccount(params.account_id, params.api_key);
 
         const output = { deleted: true, account_id: params.account_id };
 
