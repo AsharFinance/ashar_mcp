@@ -270,6 +270,18 @@ Exemplos de uso:
     },
     async (params) => {
       try {
+        // snake_case (Zod schema) → camelCase (API backend)
+        const snakeToCamel: Record<string, string> = {
+          bank_name: "bankName",
+          branch_code: "branchCode",
+          account_number: "accountNumber",
+          routing_code: "routingCode",
+          pix_key: "pixKey",
+          pix_key_type: "pixKeyType",
+          account_type: "accountType",
+          is_favorite: "isFavorite",
+        };
+
         const updateData: Record<string, unknown> = {};
         const fields: (keyof typeof params)[] = [
           "label", "beneficiary", "document", "bank_name", "branch_code",
@@ -279,7 +291,8 @@ Exemplos de uso:
         for (const f of fields) {
           const v = (params as any)[f];
           if (v !== undefined) {
-            updateData[f] = v;
+            const key = snakeToCamel[f] || String(f);
+            updateData[key] = v;
           }
         }
 
