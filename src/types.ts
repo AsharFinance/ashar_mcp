@@ -258,14 +258,15 @@ export const CryptoWithdrawalStatusInputSchema = z
 
 export const CryptoDepositAddressInputSchema = z
   .object({
-    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario (Ashar Management)"),
+    user_id: z.string().min(1, "user_id e obrigatorio").describe("ID do usuario no CaaS (para quem gerar o endereco)"),
     asset: z
       .enum(["USDT", "USDC"])
       .describe("Ativo para deposito: USDT ou USDC"),
     chain: z
       .string()
       .min(1, "chain is required")
-      .describe("Blockchain (ex: ETHEREUM, BSC, POLYGON, TRX)"),
+      .describe("Blockchain (ex: ethereum, polygon, bsc, trx)"),
     response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
   })
   .strict();

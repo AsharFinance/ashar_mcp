@@ -7,8 +7,13 @@
 
 const API_BASE_URL = process.env.ASHAR_API_URL || "https://api.ashar.finance";
 
+const CAAS_API_URL = process.env.CAAS_API_URL || "https://api-assets.up.railway.app";
+
 /** Server-level fallback key. Prefer per-request apiKey for user isolation. */
 const DEFAULT_API_KEY = process.env.ASHAR_API_KEY || "";
+
+/** Server-level CaaS API key (for custody operations). */
+const CAAS_API_KEY = process.env.CAAS_API_KEY || "";
 
 export class AsharApiError extends Error {
   status: number;
@@ -60,6 +65,43 @@ async function request<T>(
   return data as T;
 }
 
+/** CaaS-specific request (for custody/deposit-address operations). */
+async function caasRequest<T>(
+  method: "GET" | "POST" | "PUT" | "DELETE",
+  path: string,
+  body?: Record<string, unknown>,
+): Promise<T> {
+  const url = `${CAAS_API_URL.replace(/\/+$/, "")}${path}`;
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+
+  if (CAAS_API_KEY) {
+    headers["x-api-key"] = CAAS_API_KEY;
+  }
+
+  const res = await fetch(url, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+    signal: AbortSignal.timeout(30_000),
+  });
+
+  const data: any = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    throw new AsharApiError(
+      data?.error || data?.message || `CaaS HTTP ${res.status}`,
+      res.status,
+      data,
+    );
+  }
+
+  return data as T;
+}
+
 // ── Public API ─────────────────────────────────────────────────────────────────
 
 /** Get user balances (BRL, USD, EUR, USDT, USDC). */
@@ -100,7 +142,7 @@ export async function createConversion(
   },
   apiKey?: string,
 ): Promise<any> {
-  return request<any>("POST", "/api/banking/virtual-swap-requests", {
+  return request<any>("POST", "/api/virtual-swap-requests", {
     direction: "FIAT_TO_CRYPTO",
     fromCurrency: params.fromCurrency,
     toCurrency: params.toCurrency,
@@ -139,9 +181,18 @@ export async function getCryptoWithdrawalStatus(externalId: string, apiKey?: str
   );
 }
 
-/** Get custody deposit address for crypto deposits. */
-export async function getCryptoDepositAddress(asset: string, chain: string, apiKey?: string): Promise<any> {
-  return request<any>("POST", "/api/custody/deposit-address", { asset, chain }, apiKey);
+/** Get custody deposit address for crypto deposits via CaaS. */
+export async function getCryptoDepositAddress(
+  asset: string,
+  chain: string,
+  userId: string,
+): Promise<any> {
+  return caasRequest<any>("POST", "/deposit-orders", {
+    asset,
+    chain,
+    userId,
+    externalId: `mcp-${userId}-${asset}-${chain}-${Date.now()}`,
+  });
 }
 
 // ── Bank Accounts CRUD ─────────────────────────────────────────────────────────

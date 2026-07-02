@@ -56,7 +56,11 @@ Exemplos de uso:
     },
     async (params) => {
       try {
-        const depositAddress = await getCryptoDepositAddress(params.asset, params.chain, params.api_key);
+        const depositAddress = await getCryptoDepositAddress(
+          params.asset,
+          params.chain,
+          params.user_id,
+        );
 
         const output = {
           id: depositAddress.id,
