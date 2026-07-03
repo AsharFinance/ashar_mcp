@@ -9,7 +9,7 @@ import crypto from "crypto";
 
 const API_BASE_URL = process.env.ASHAR_API_URL || "https://api.ashar.finance";
 
-const CAAS_API_URL = process.env.CAAS_API_URL || "https://api-assets.ashar.finance";
+const CAAS_API_URL = process.env.CAAS_API_URL || "https://api-assets.up.railway.app";
 
 /** Server-level fallback key. Prefer per-request apiKey for user isolation. */
 const DEFAULT_API_KEY = process.env.ASHAR_API_KEY || "";

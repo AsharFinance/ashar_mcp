@@ -115,7 +115,7 @@ The `mcp_ashar/` folder contains standalone JSON tool descriptors following the 
 | `ASHAR_TRANSPORT` | No | `stdio` | Transport mode: `stdio` or `http` |
 | `PORT` | No | `3000` | HTTP port (only when `ASHAR_TRANSPORT=http`) |
 
-> **Internal (server-side only):** `CAAS_API_URL` (default: `https://api-assets.ashar.finance`) and `CAAS_API_KEY` are used internally for custody operations. Clients do not need to configure these.
+> **Internal (server-side only):** `CAAS_API_URL` (default: `https://api-assets.up.railway.app`) and `CAAS_API_KEY` are used internally for custody operations. Clients do not need to configure these.
 
 ---
 
