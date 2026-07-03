@@ -1,6 +1,6 @@
 {
   "name": "PostV1Conversions",
-  "description": "Create Currency Conversion",
+  "description": "Create FIAT_TO_CRYPTO Currency Conversion (BRL → USDT/USDC)",
   "arguments": {
     "type": "object",
     "properties": {
@@ -34,7 +34,7 @@
           }
         },
         "required": ["from_currency", "to_currency", "amount_from"],
-        "description": "Creates a currency conversion request. Supports all combinations of BRL, USD, EUR, USDT, and USDC. The conversion stays PENDING until approved by an administrator."
+        "description": "Creates a FIAT_TO_CRYPTO virtual swap request (accounting ledger operation). Supports all combinations of BRL, USD, EUR, USDT, and USDC. The conversion stays PENDING until approved by an administrator. NOTE: This tool always uses direction=FIAT_TO_CRYPTO. For CRYPTO_TO_FIAT, call the API directly."
       }
     },
     "required": ["api_key"]

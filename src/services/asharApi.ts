@@ -5,6 +5,8 @@
  * Authentication is done via x-api-key header.
  */
 
+import crypto from "crypto";
+
 const API_BASE_URL = process.env.ASHAR_API_URL || "https://api.ashar.finance";
 
 const CAAS_API_URL = process.env.CAAS_API_URL || "https://api-assets.up.railway.app";
@@ -12,8 +14,64 @@ const CAAS_API_URL = process.env.CAAS_API_URL || "https://api-assets.up.railway.
 /** Server-level fallback key. Prefer per-request apiKey for user isolation. */
 const DEFAULT_API_KEY = process.env.ASHAR_API_KEY || "";
 
-/** Server-level CaaS API key (for custody operations). */
+/** Server-level CaaS HMAC secret or pre-generated legacy API key (for custody operations). */
 const CAAS_API_KEY = process.env.CAAS_API_KEY || "";
+
+// ── CaaS Legacy API Key Generator ──────────────────────────────────────────
+
+let _cachedCaaSKey: string | null = null;
+let _cachedCaaSKeyExpiresAt: number = 0;
+
+/**
+ * The CaaS HeaderAuthGuard expects a "legacy API key" in the format:
+ *   base64url(header).base64url(payload).base64url(HMAC-SHA256(header.payload, secret))
+ *
+ * If CAAS_API_KEY is already in `xxx.yyy.zzz` format (contains 2 dots), it's
+ * treated as a pre-generated key and used directly. Otherwise it's treated as
+ * the HMAC secret and a key is generated on the fly, cached for 23h.
+ */
+function getCaaSAuthHeader(): string {
+  // Already a pre-generated legacy key (format: header.payload.signature)
+  if (CAAS_API_KEY.split(".").length === 3) {
+    return CAAS_API_KEY;
+  }
+
+  // Check cache (keys valid for 23 hours, regenerate with 1h buffer)
+  const now = Date.now();
+  if (_cachedCaaSKey && now < _cachedCaaSKeyExpiresAt) {
+    return _cachedCaaSKey;
+  }
+
+  if (!CAAS_API_KEY) {
+    return "";
+  }
+
+  const header = Buffer.from(
+    JSON.stringify({ alg: "HS256", typ: "JWT" }),
+  ).toString("base64url");
+
+  const exp = Math.floor(now / 1000) + 86400; // 24h from now
+  const payload = Buffer.from(
+    JSON.stringify({
+      sub: "ashar-mcp",
+      role: "admin",
+      exp,
+    }),
+  ).toString("base64url");
+
+  const signature = crypto
+    .createHmac("sha256", CAAS_API_KEY)
+    .update(`${header}.${payload}`)
+    .digest("base64")
+    .replace(/=+/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+
+  _cachedCaaSKey = `${header}.${payload}.${signature}`;
+  _cachedCaaSKeyExpiresAt = exp * 1000 - 3600_000; // regenerate 1h before expiry
+
+  return _cachedCaaSKey;
+}
 
 export class AsharApiError extends Error {
   status: number;
@@ -78,8 +136,9 @@ async function caasRequest<T>(
     Accept: "application/json",
   };
 
-  if (CAAS_API_KEY) {
-    headers["x-api-key"] = CAAS_API_KEY;
+  const authKey = getCaaSAuthHeader();
+  if (authKey) {
+    headers["x-api-key"] = authKey;
   }
 
   const res = await fetch(url, {

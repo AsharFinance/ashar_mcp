@@ -1,17 +1,22 @@
 {
   "name": "PostV1CryptoDepositAddresses",
-  "description": "Generate Crypto Deposit Address (USDT/USDC)",
+  "description": "Generate Crypto Deposit Address (USDT/USDC) via CaaS (Notus/BlindPay Account Abstraction)",
   "arguments": {
     "type": "object",
     "properties": {
       "api_key": {
         "type": "string",
         "minLength": 32,
-        "description": "Ashar API key (Bearer token)"
+        "description": "Ashar Management API key (Bearer token) — used to resolve the user identity"
       },
       "requestBody": {
         "type": "object",
         "properties": {
+          "user_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "ID do usuario no CaaS para quem gerar o endereco de deposito"
+          },
           "asset": {
             "type": "string",
             "enum": ["USDT", "USDC"],
@@ -19,14 +24,14 @@
           },
           "chain": {
             "type": "string",
-            "enum": ["ETHEREUM", "BSC", "POLYGON", "TRX"],
-            "description": "Blockchain network for the deposit"
+            "enum": ["ethereum", "polygon", "bsc", "trx", "solana", "base", "arbitrum", "stellar"],
+            "description": "Blockchain network for the deposit (lowercase). EVM chains use Notus ERC-4337; Solana/Tron/Stellar use BlindPay."
           }
         },
-        "required": ["asset", "chain"],
-        "description": "Generates a custody address for receiving USDT or USDC. WARNING: Send ONLY the specified asset on the specified network. Sending the wrong asset or using the wrong network may result in permanent loss of funds. Deposit is credited after blockchain confirmations."
+        "required": ["user_id", "asset", "chain"],
+        "description": "Generates a Smart Account (ERC-4337 via Notus) or BlindPay wallet address for receiving USDT or USDC. The provider is auto-selected based on the chain. WARNING: Send ONLY the specified asset on the specified network. Sending the wrong asset or using the wrong network may result in permanent loss of funds. Deposit is credited after blockchain confirmations."
       }
     },
-    "required": ["api_key"]
+    "required": ["api_key", "requestBody"]
   }
 }
