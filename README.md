@@ -79,9 +79,7 @@ Add to your `claude_desktop_config.json`:
       "args": ["/absolute/path/to/ashar_mcp/dist/index.js"],
       "env": {
         "ASHAR_API_KEY": "your-api-key",
-        "ASHAR_API_URL": "https://api.ashar.finance",
-        "CAAS_API_KEY": "your-caas-api-key",
-        "CAAS_API_URL": "https://api-assets.up.railway.app"
+        "ASHAR_API_URL": "https://api.ashar.finance"
       }
     }
   }
@@ -95,7 +93,7 @@ Use the **stdio transport**. Configure the same command and environment variable
 ### HTTP Server (for remote/cloud deployments)
 
 ```bash
-ASHAR_TRANSPORT=http ASHAR_API_KEY=your-key CAAS_API_KEY=your-caas-key PORT=3000 npm start
+ASHAR_TRANSPORT=http ASHAR_API_KEY=your-key PORT=3000 npm start
 ```
 
 Endpoints:
@@ -114,10 +112,10 @@ The `mcp_ashar/` folder contains standalone JSON tool descriptors following the 
 |---|---|---|---|
 | `ASHAR_API_KEY` | Yes | — | Your Ashar Finance API key (Bearer token for management API) |
 | `ASHAR_API_URL` | No | `https://api.ashar.finance` | Base URL for the Ashar Management API |
-| `CAAS_API_KEY` | No | — | CaaS API key (required for crypto deposit address generation) |
-| `CAAS_API_URL` | No | `https://api-assets.up.railway.app` | Base URL for the CaaS (Digital Assets) API |
 | `ASHAR_TRANSPORT` | No | `stdio` | Transport mode: `stdio` or `http` |
 | `PORT` | No | `3000` | HTTP port (only when `ASHAR_TRANSPORT=http`) |
+
+> **Internal (server-side only):** `CAAS_API_URL` (default: `https://api-assets.ashar.finance`) and `CAAS_API_KEY` are used internally for custody operations. Clients do not need to configure these.
 
 ---
 
