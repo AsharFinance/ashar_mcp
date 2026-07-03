@@ -261,12 +261,11 @@ ashar_sacar_crypto { asset: "USDT", chain: "BSC", amount: 100, destination_addre
 ### Generate Crypto Deposit Address
 
 ```
-ashar_endereco_deposito_crypto { api_key: "pk_live_...", user_id: "f6b3bd4c-...", asset: "USDC", chain: "polygon" }
+ashar_endereco_deposito_crypto { api_key: "pk_live_...", asset: "USDC", chain: "polygon" }
 ```
 
 **Input**:
-- `api_key` (string, required) — Ashar Management API key
-- `user_id` (string, required) — CaaS user ID to generate the address for
+- `api_key` (string, required) — Ashar Management API key (user resolved automatically)
 - `asset` (string, required) — `USDT` or `USDC`
 - `chain` (string, required) — `ethereum`, `polygon`, `bsc`, `trx`, `solana`, `base`, `arbitrum`, or `stellar`
 

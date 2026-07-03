@@ -241,17 +241,16 @@ export async function getCryptoWithdrawalStatus(externalId: string, apiKey?: str
 }
 
 /** Get custody deposit address for crypto deposits via CaaS. */
+/** Generate a crypto deposit address via management (resolves user from api_key and proxies to CaaS). */
 export async function getCryptoDepositAddress(
   asset: string,
   chain: string,
-  userId: string,
+  apiKey?: string,
 ): Promise<any> {
-  return caasRequest<any>("POST", "/deposit-orders", {
+  return request<any>("POST", "/api/ashar/deposits/crypto/address", {
     asset,
     chain,
-    userId,
-    externalId: `mcp-${userId}-${asset}-${chain}-${Date.now()}`,
-  });
+  }, apiKey);
 }
 
 // ── Bank Accounts CRUD ─────────────────────────────────────────────────────────

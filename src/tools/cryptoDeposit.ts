@@ -59,7 +59,7 @@ Exemplos de uso:
         const depositAddress = await getCryptoDepositAddress(
           params.asset,
           params.chain,
-          params.user_id,
+          params.api_key,
         );
 
         const output = {
