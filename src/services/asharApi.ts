@@ -198,14 +198,14 @@ export function resolveProvider(chain: string): "notus" | "blindpay" | "alchemy"
 
 /** List custody deposit addresses / smart accounts of the user (Notus + BlindPay). */
 export async function listCustodyAddresses(apiKey?: string): Promise<any[]> {
-  const data = await request<any>("GET", "/api/custody/addresses", undefined, apiKey);
+  const data = await request<any>("GET", "/api/addresses", undefined, apiKey);
   if (Array.isArray(data)) return data;
   return Array.isArray(data?.addresses) ? data.addresses : [];
 }
 
 /** List supported chain/asset pairs (composicao de carteiras disponivel). */
 export async function getSupportedPairs(apiKey?: string): Promise<any[]> {
-  const data = await request<any>("GET", "/api/custody/supported-pairs", undefined, apiKey);
+  const data = await request<any>("GET", "/api/supported-pairs", undefined, apiKey);
   if (Array.isArray(data)) return data;
   return Array.isArray(data?.pairs) ? data.pairs : [];
 }
@@ -233,9 +233,30 @@ export async function getExchangeRate(
   to: string,
   apiKey?: string,
 ): Promise<{ rate: number; spreadPct: number; source: string }> {
+  const f = from.toUpperCase();
+  const t = to.toUpperCase();
+
+  // Same currency
+  if (f === t) return { rate: 1, spreadPct: 0, source: "spot" };
+
+  // EUR pairs: backend /api/exchange-rate does not support EUR.
+  // Fallback: compute cross-rate via /api/prices (all prices in USD).
+  if (f === "EUR" || t === "EUR") {
+    const prices = await getPrices(apiKey);
+    const usdPerFrom = f === "EUR" ? (prices.EUR ?? 1.07) : (prices[f] ?? 1);
+    const usdPerTo = t === "EUR" ? (prices.EUR ?? 1.07) : (prices[t] ?? 1);
+    if (usdPerTo === 0) throw new Error(`Preco USD de ${t} e zero`);
+    return {
+      rate: Math.round((usdPerFrom / usdPerTo) * 1e8) / 1e8,
+      spreadPct: 0,
+      source: "prices-cross-rate",
+    };
+  }
+
+  // Non-EUR pairs: use direct /api/exchange-rate endpoint
   const data = await request<any>(
     "GET",
-    `/api/exchange-rate?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+    `/api/exchange-rate?from=${encodeURIComponent(f)}&to=${encodeURIComponent(t)}`,
     undefined,
     apiKey,
   );
@@ -327,18 +348,25 @@ export async function getCryptoWithdrawalStatus(externalId: string, apiKey?: str
   );
 }
 
-/** List crypto withdrawal history (with optional filters). */
+/** List crypto withdrawal history (via unified activity feed, filtered to crypto withdrawals). */
 export async function listCryptoWithdrawals(
   options: { limit?: number; asset?: string } = {},
   apiKey?: string,
 ): Promise<any[]> {
+  const limit = options.limit || 30;
   const params = new URLSearchParams();
-  if (options.limit) params.set("limit", String(options.limit));
-  if (options.asset) params.set("asset", options.asset);
-  const qs = params.toString() ? `?${params.toString()}` : "";
-  const data = await request<any>("GET", `/api/crypto-withdrawals${qs}`, undefined, apiKey);
-  if (Array.isArray(data)) return data;
-  return Array.isArray(data?.items) ? data.items : Array.isArray(data?.withdrawals) ? data.withdrawals : [];
+  params.set("limit", String(Math.min(limit, 50)));
+  params.set("category", "withdrawal");
+  if (options.asset) params.set("currency", options.asset);
+  const data = await request<any>(
+    "GET",
+    `/api/mobile/activity?${params.toString()}`,
+    undefined,
+    apiKey,
+  );
+  const entries = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+  // Filter to only crypto withdrawals (type === CRYPTO_WITHDRAWAL)
+  return entries.filter((e: any) => e.type === "CRYPTO_WITHDRAWAL");
 }
 
 /** Get custody deposit address for crypto deposits via CaaS. */

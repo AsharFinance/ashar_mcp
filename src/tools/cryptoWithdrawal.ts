@@ -306,17 +306,17 @@ Exemplos de uso:
 
         const items = withdrawals.map((w: any) => ({
           id: w.id,
-          external_id: w.externalId,
-          asset: w.asset,
-          chain: w.chain,
+          external_id: w.externalId ?? w.id,
+          asset: w.currency ?? w.asset,
+          chain: w.counterparty ?? w.chain,
           amount: String(w.amount ?? ""),
-          destination_address: w.destinationAddress,
+          destination_address: w.destinationAddress ?? w.counterparty ?? null,
           status: w.status,
           approval_tier: w.approvalTier ?? null,
           amount_usd: w.amountUsd ?? null,
           provider: w.provider ?? null,
           tx_hash: w.txHash ?? null,
-          created_at: w.createdAt,
+          created_at: w.date ?? w.createdAt ?? w.created_at,
         }));
 
         const output = { withdrawals: items, total: items.length };
