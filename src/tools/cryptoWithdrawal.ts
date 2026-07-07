@@ -8,11 +8,13 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   CryptoWithdrawalCreateInputSchema,
   CryptoWithdrawalStatusInputSchema,
+  CryptoWithdrawalListInputSchema,
   ResponseFormat,
 } from "../types.js";
 import {
   createCryptoWithdrawal,
   getCryptoWithdrawalStatus,
+  listCryptoWithdrawals,
   handleApiError,
 } from "../services/asharApi.js";
 
@@ -223,6 +225,134 @@ Exemplos de uso:
 
         return {
           content: [{ type: "text", text }],
+          structuredContent: output,
+        };
+      } catch (error) {
+        return { content: [{ type: "text", text: handleApiError(error) }] };
+      }
+    },
+  );
+
+  // ── ashar_listar_saques_crypto ───────────────────────────────────────────
+  server.registerTool(
+    "ashar_listar_saques_crypto",
+    {
+      title: "Listar Historico de Saques Crypto",
+      description: `Lista o historico de saques de USDT e USDC do usuario na Ashar Finance.
+
+Permite filtrar por ativo (USDT ou USDC) e limitar a quantidade de resultados.
+
+Os saques podem ter diferentes status:
+  - PENDING: aguardando processamento
+  - PROCESSING: em andamento
+  - SUBMITTED: submetido a blockchain (Notus) ou treasury (BlindPay)
+  - CONFIRMED: confirmado on-chain
+  - COMPLETED: concluido com sucesso
+  - FAILED: falhou
+  - CANCELLED: cancelado
+
+Providers de saque:
+  - Notus (eth/polygon/bsc): Smart Account ERC-4337 → UserOperation assinada pelo CaaS
+  - BlindPay (solana/tron/stellar/base/arbitrum): custodia terceirizada → treasury
+
+Args:
+  - limit (number, opcional): Maximo de resultados (default: 30, max: 100)
+  - asset (string, opcional): Filtrar por 'USDT' ou 'USDC'
+  - response_format ('markdown' | 'json'): Formato de saida (default: 'json')
+
+Returns:
+  Para JSON:
+  {
+    "withdrawals": [{
+      "id": string,
+      "external_id": string,
+      "asset": string,
+      "chain": string,
+      "amount": string,
+      "destination_address": string,
+      "status": string,
+      "approval_tier": string | null,
+      "amount_usd": string | null,
+      "created_at": string
+    }],
+    "total": number
+  }
+
+Exemplos de uso:
+  - "Historico de saques crypto"
+  - "Lista meus ultimos saques de USDT"
+  - "Quais foram minhas retiradas de USDC?"`,
+      inputSchema: CryptoWithdrawalListInputSchema,
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async (params) => {
+      try {
+        const withdrawals = await listCryptoWithdrawals({
+          limit: params.limit,
+          asset: params.asset,
+        }, params.api_key);
+
+        if (!withdrawals.length) {
+          const filterMsg = params.asset
+            ? `Nenhum saque de ${params.asset} encontrado.`
+            : "Nenhum saque crypto encontrado.";
+          return { content: [{ type: "text", text: filterMsg }] };
+        }
+
+        const items = withdrawals.map((w: any) => ({
+          id: w.id,
+          external_id: w.externalId,
+          asset: w.asset,
+          chain: w.chain,
+          amount: String(w.amount ?? ""),
+          destination_address: w.destinationAddress,
+          status: w.status,
+          approval_tier: w.approvalTier ?? null,
+          amount_usd: w.amountUsd ?? null,
+          provider: w.provider ?? null,
+          tx_hash: w.txHash ?? null,
+          created_at: w.createdAt,
+        }));
+
+        const output = { withdrawals: items, total: items.length };
+
+        let text: string;
+        if (params.response_format === ResponseFormat.MARKDOWN) {
+          const lines = [
+            "# Historico de Saques Crypto",
+            "",
+            `| Status | Ativo | Quantidade | Chain | Destino | Data |`,
+            `|--------|-------|------------|-------|---------|------|`,
+          ];
+          for (const w of items) {
+            const statusEmoji =
+              w.status === "COMPLETED" || w.status === "CONFIRMED"
+                ? "✅"
+                : w.status === "FAILED" || w.status === "CANCELLED"
+                  ? "❌"
+                  : w.status === "SUBMITTED"
+                    ? "📤"
+                    : "⏳";
+            const shortDest = w.destination_address
+              ? `${w.destination_address.slice(0, 6)}...${w.destination_address.slice(-4)}`
+              : "—";
+            lines.push(
+              `| ${statusEmoji} ${w.status} | ${w.asset} | ${w.amount} | ${w.chain} | \`${shortDest}\` | ${w.created_at} |`,
+            );
+          }
+          lines.push("", `**Total**: ${items.length} saque(s)`);
+          text = lines.join("\n");
+        } else {
+          text = JSON.stringify(output, null, 2);
+        }
+
+        return {
+          content: [{ type: "text", text: text.slice(0, CHARACTER_LIMIT) }],
           structuredContent: output,
         };
       } catch (error) {

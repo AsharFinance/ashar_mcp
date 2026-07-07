@@ -1,4 +1,5 @@
 {
   "server_name": "mcp_ashar",
-  "description": "Ashar Finance API — manage bank accounts, PIX deposits, fiat/crypto withdrawals, and currency conversions across BRL, USD, EUR, USDT, and USDC"
+  "version": "1.1.0",
+  "description": "Ashar Finance API — wallet composition (Notus ERC-4337 + Management VirtualLedger + CaaS custody), currency conversion (BRL/USD/EUR/USDT/USDC), PIX deposits, crypto/fiat withdrawals, and custody deposit addresses"
 }

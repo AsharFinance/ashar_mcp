@@ -1,0 +1,28 @@
+{
+  "name": "ashar_listar_saques_crypto",
+  "description": "Lista o historico de saques de USDT e USDC do usuario na Ashar Finance. Permite filtrar por ativo e limitar resultados. Mostra status, chain, provider (Notus/BlindPay), valor e endereco destino.",
+  "arguments": {
+    "type": "object",
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "description": "Chave API do usuario"
+      },
+      "limit": {
+        "type": "number",
+        "description": "Maximo de resultados (default: 30, max: 100)"
+      },
+      "asset": {
+        "type": "string",
+        "enum": ["USDT", "USDC"],
+        "description": "Filtrar por ativo (opcional)"
+      },
+      "response_format": {
+        "type": "string",
+        "enum": ["markdown", "json"],
+        "default": "json"
+      }
+    },
+    "required": ["api_key"]
+  }
+}

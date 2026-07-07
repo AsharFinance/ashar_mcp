@@ -1,7 +1,7 @@
 {
   "name": "ashar-mcp-server",
-  "version": "1.0.0",
-  "description": "MCP server for Ashar Finance API — depositos, conversoes e saques em BRL, USDT e USDC",
+  "version": "1.1.0",
+  "description": "MCP server for Ashar Finance API — depositos, conversoes, saques e composicao de carteiras (Notus + Management + CaaS)",
   "type": "module",
   "main": "dist/index.js",
   "bin": {

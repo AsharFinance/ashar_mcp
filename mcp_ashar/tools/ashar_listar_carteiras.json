@@ -1,0 +1,23 @@
+{
+  "name": "ashar_listar_carteiras",
+  "description": "Lista a composicao completa das carteiras do usuario na Ashar Finance, integrando VirtualLedger (Management), Smart Accounts Notus (CaaS) e wallets BlindPay (CaaS). Retorna saldos por moeda e enderecos on-chain com informacao do provider.",
+  "arguments": {
+    "type": "object",
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "description": "Chave API do usuario"
+      },
+      "chain": {
+        "type": "string",
+        "description": "Filtrar por chain (ex: 'eth', 'polygon', 'bsc', 'tron'). Opcional."
+      },
+      "response_format": {
+        "type": "string",
+        "enum": ["markdown", "json"],
+        "default": "json"
+      }
+    },
+    "required": ["api_key"]
+  }
+}

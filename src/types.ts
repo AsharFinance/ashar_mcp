@@ -153,6 +153,48 @@ export interface RemittanceOrder {
   createdAt: string;
 }
 
+// ── Wallet Composition Types (Notus + Management + CaaS) ────────────────────
+
+export interface SmartAccountInfo {
+  id: string;
+  address: string;
+  chain: string;
+  provider: "notus" | "alchemy" | "blindpay";
+  signerAddress?: string | null;
+  deployed: boolean;
+  createdAt: string;
+}
+
+export interface VirtualBalanceInfo {
+  currency: string;
+  balance: number;
+  locked: number;
+  available: number;
+}
+
+export interface WalletComposition {
+  userId: string | null;
+  virtualBalances: VirtualBalanceInfo[];
+  smartAccounts: SmartAccountInfo[];
+  depositAddresses: CryptoDepositAddress[];
+  total: {
+    smartAccounts: number;
+    depositAddresses: number;
+    currencies: number;
+  };
+}
+
+export interface ExchangeRateQuote {
+  rate: number;
+  spreadPct: number;
+  source: string;
+  fromCurrency: string;
+  toCurrency: string;
+  fromAmount?: number;
+  toAmount?: number;
+  timestamp: string;
+}
+
 // ── Pagination ────────────────────────────────────────────────────────────────
 
 export interface PaginatedResponse<T> {
@@ -234,7 +276,7 @@ export const CryptoWithdrawalCreateInputSchema = z
     chain: z
       .string()
       .min(1, "chain is required")
-      .describe("Blockchain (ex: ETHEREUM, BSC, POLYGON, TRX)"),
+      .describe("Blockchain de destino. Notus (ERC-4337): eth, polygon, bsc. BlindPay: solana, tron, stellar, base, arbitrum"),
     amount: z.number().positive("amount must be positive").describe("Quantidade a sacar"),
     destination_address: z
       .string()
@@ -265,7 +307,7 @@ export const CryptoDepositAddressInputSchema = z
     chain: z
       .string()
       .min(1, "chain is required")
-      .describe("Blockchain (ex: ethereum, polygon, bsc, trx)"),
+      .describe("Blockchain de origem. Notus (ERC-4337): eth, polygon, bsc. BlindPay: solana, tron, stellar, base, arbitrum"),
     response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
   })
   .strict();
@@ -417,3 +459,71 @@ export type BankAccountUpdateInput = z.infer<typeof BankAccountUpdateInputSchema
 export type BankAccountDeleteInput = z.infer<typeof BankAccountDeleteInputSchema>;
 export type FiatWithdrawalCreateInput = z.infer<typeof FiatWithdrawalCreateInputSchema>;
 export type FiatWithdrawalListInput = z.infer<typeof FiatWithdrawalListInputSchema>;
+
+// ── Wallet Composition Schemas ────────────────────────────────────────────────
+
+export const WalletsListInputSchema = z
+  .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
+    chain: z
+      .string()
+      .optional()
+      .describe("Filtrar por chain (ex: 'eth', 'polygon', 'bsc', 'tron'). Se omitido, retorna todas."),
+    response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
+  })
+  .strict();
+
+export const WalletDetailInputSchema = z
+  .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
+    wallet_id: z.string().min(1, "wallet_id is required").describe("ID da carteira (Smart Account ou endereco de deposito)"),
+    response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
+  })
+  .strict();
+
+// ── Quote / Exchange Rate Schemas ─────────────────────────────────────────────
+
+export const QuoteInputSchema = z
+  .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
+    from_currency: z
+      .enum(["BRL", "USD", "EUR", "USDT", "USDC"])
+      .describe("Moeda de origem: BRL, USD, EUR, USDT ou USDC"),
+    to_currency: z
+      .enum(["BRL", "USD", "EUR", "USDT", "USDC"])
+      .describe("Moeda de destino: BRL, USD, EUR, USDT ou USDC"),
+    amount: z.number().positive().optional().describe("Valor a converter para estimativa (opcional)"),
+    response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
+  })
+  .strict();
+
+export const PricesInputSchema = z
+  .object({
+    response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
+  })
+  .strict();
+
+export const SupportedPairsInputSchema = z
+  .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
+    response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
+  })
+  .strict();
+
+// ── Crypto Withdrawal History Schema ───────────────────────────────────────────
+
+export const CryptoWithdrawalListInputSchema = z
+  .object({
+    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
+    limit: z.number().int().min(1).max(100).default(30).describe("Maximum results to return"),
+    asset: z.enum(["USDT", "USDC"]).optional().describe("Filtrar por ativo (USDT ou USDC)"),
+    response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
+  })
+  .strict();
+
+export type WalletsListInput = z.infer<typeof WalletsListInputSchema>;
+export type WalletDetailInput = z.infer<typeof WalletDetailInputSchema>;
+export type QuoteInput = z.infer<typeof QuoteInputSchema>;
+export type PricesInput = z.infer<typeof PricesInputSchema>;
+export type SupportedPairsInput = z.infer<typeof SupportedPairsInputSchema>;
+export type CryptoWithdrawalListInput = z.infer<typeof CryptoWithdrawalListInputSchema>;

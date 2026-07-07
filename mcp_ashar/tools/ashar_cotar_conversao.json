@@ -1,0 +1,33 @@
+{
+  "name": "ashar_cotar_conversao",
+  "description": "Obtem a cotacao mid-market (sem spread) para conversao entre BRL, USD, EUR, USDT e USDC. Fonte: OKX. Suporta os 20 pares entre as 5 moedas. Se 'amount' for informado, retorna o valor estimado na moeda de destino.",
+  "arguments": {
+    "type": "object",
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "description": "Chave API do usuario"
+      },
+      "from_currency": {
+        "type": "string",
+        "enum": ["BRL", "USD", "EUR", "USDT", "USDC"],
+        "description": "Moeda de origem"
+      },
+      "to_currency": {
+        "type": "string",
+        "enum": ["BRL", "USD", "EUR", "USDT", "USDC"],
+        "description": "Moeda de destino"
+      },
+      "amount": {
+        "type": "number",
+        "description": "Valor a converter para estimativa (opcional)"
+      },
+      "response_format": {
+        "type": "string",
+        "enum": ["markdown", "json"],
+        "default": "json"
+      }
+    },
+    "required": ["api_key", "from_currency", "to_currency"]
+  }
+}

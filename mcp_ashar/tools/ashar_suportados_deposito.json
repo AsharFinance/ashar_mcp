@@ -1,0 +1,19 @@
+{
+  "name": "ashar_suportados_deposito",
+  "description": "Lista todos os pares chain/asset suportados para deposito crypto na Ashar Finance, com informacao do provider (Notus para EVM, BlindPay para demais chains).",
+  "arguments": {
+    "type": "object",
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "description": "Chave API do usuario"
+      },
+      "response_format": {
+        "type": "string",
+        "enum": ["markdown", "json"],
+        "default": "json"
+      }
+    },
+    "required": ["api_key"]
+  }
+}

@@ -27,6 +27,8 @@ import { registerBankAccountTools } from "./tools/bankAccounts.js";
 import { registerFiatWithdrawalTools } from "./tools/fiatWithdrawal.js";
 import { registerWebhookTools } from "./tools/webhooks.js";
 import { registerBalanceTools } from "./tools/balance.js";
+import { registerWalletTools } from "./tools/wallets.js";
+import { registerQuoteTools } from "./tools/quote.js";
 
 // ── Validate required env vars ────────────────────────────────────────────────
 
@@ -59,14 +61,16 @@ const server = new McpServer({
 });
 
 // Register all tool groups
+registerBalanceTools(server);
+registerWalletTools(server);
 registerBrlDepositTools(server);
 registerConversionTools(server);
+registerQuoteTools(server);
 registerCryptoWithdrawalTools(server);
 registerCryptoDepositTools(server);
 registerBankAccountTools(server);
 registerFiatWithdrawalTools(server);
 registerWebhookTools(server);
-registerBalanceTools(server);
 
 // ── stdio transport (default for local use) ───────────────────────────────────
 

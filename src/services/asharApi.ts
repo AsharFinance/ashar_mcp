@@ -175,6 +175,82 @@ export async function getBalances(apiKey?: string): Promise<Record<string, numbe
   };
 }
 
+// ── Wallet Composition (Notus + Management + CaaS) ─────────────────────────────
+
+/** Chain → provider routing (Notus para EVM eth/polygon/bsc, BlindPay para o resto). */
+const CHAIN_PROVIDER: Record<string, "notus" | "blindpay" | "alchemy"> = {
+  eth: "notus",
+  ethereum: "notus",
+  polygon: "notus",
+  bsc: "notus",
+  solana: "blindpay",
+  tron: "blindpay",
+  trx: "blindpay",
+  stellar: "blindpay",
+  base: "blindpay",
+  arbitrum: "blindpay",
+};
+
+/** Normaliza a chain para minusculo e resolve o provider correspondente. */
+export function resolveProvider(chain: string): "notus" | "blindpay" | "alchemy" {
+  return CHAIN_PROVIDER[String(chain || "").toLowerCase()] ?? "blindpay";
+}
+
+/** List custody deposit addresses / smart accounts of the user (Notus + BlindPay). */
+export async function listCustodyAddresses(apiKey?: string): Promise<any[]> {
+  const data = await request<any>("GET", "/api/custody/addresses", undefined, apiKey);
+  if (Array.isArray(data)) return data;
+  return Array.isArray(data?.addresses) ? data.addresses : [];
+}
+
+/** List supported chain/asset pairs (composicao de carteiras disponivel). */
+export async function getSupportedPairs(apiKey?: string): Promise<any[]> {
+  const data = await request<any>("GET", "/api/custody/supported-pairs", undefined, apiKey);
+  if (Array.isArray(data)) return data;
+  return Array.isArray(data?.pairs) ? data.pairs : [];
+}
+
+/**
+ * Compose a full wallet view: virtual balances (Management VirtualLedger) +
+ * custody addresses/smart accounts (CaaS via Notus/BlindPay).
+ */
+export async function getWalletComposition(apiKey?: string): Promise<{
+  balances: Record<string, number>;
+  addresses: any[];
+}> {
+  const [balances, addresses] = await Promise.all([
+    getBalances(apiKey).catch(() => ({ brl: 0, usd: 0, eur: 0, usdt: 0, usdc: 0 })),
+    listCustodyAddresses(apiKey).catch(() => []),
+  ]);
+  return { balances, addresses };
+}
+
+// ── Exchange Rate / Quote ──────────────────────────────────────────────────────
+
+/** Get mid-market exchange rate for a currency pair (BRL, USD, EUR, USDT, USDC). */
+export async function getExchangeRate(
+  from: string,
+  to: string,
+  apiKey?: string,
+): Promise<{ rate: number; spreadPct: number; source: string }> {
+  const data = await request<any>(
+    "GET",
+    `/api/exchange-rate?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+    undefined,
+    apiKey,
+  );
+  return {
+    rate: Number(data?.rate ?? 0),
+    spreadPct: Number(data?.spreadPct ?? 0),
+    source: data?.source ?? "OKX",
+  };
+}
+
+/** Get USD prices for all supported currencies. */
+export async function getPrices(apiKey?: string): Promise<Record<string, number>> {
+  return request<Record<string, number>>("GET", "/api/prices", undefined, apiKey);
+}
+
 /** Create a BRL PIX deposit charge. */
 export async function createBrlDeposit(amountBrl: number, apiKey?: string): Promise<any> {
   return request<any>("POST", "/api/banking/pix/deposit", { amount: amountBrl }, apiKey);
@@ -201,8 +277,19 @@ export async function createConversion(
   },
   apiKey?: string,
 ): Promise<any> {
+  const FIAT = new Set(["BRL", "USD", "EUR"]);
+  const fromIsFiat = FIAT.has(params.fromCurrency.toUpperCase());
+  const toIsFiat = FIAT.has(params.toCurrency.toUpperCase());
+  // Detecta direcao: fiat->crypto, crypto->fiat, ou mesma categoria (default FIAT_TO_CRYPTO)
+  const direction =
+    fromIsFiat && !toIsFiat
+      ? "FIAT_TO_CRYPTO"
+      : !fromIsFiat && toIsFiat
+        ? "CRYPTO_TO_FIAT"
+        : "FIAT_TO_CRYPTO";
+
   return request<any>("POST", "/api/virtual-swap-requests", {
-    direction: "FIAT_TO_CRYPTO",
+    direction,
     fromCurrency: params.fromCurrency,
     toCurrency: params.toCurrency,
     amountFrom: params.amountFrom,
@@ -238,6 +325,20 @@ export async function getCryptoWithdrawalStatus(externalId: string, apiKey?: str
     undefined,
     apiKey,
   );
+}
+
+/** List crypto withdrawal history (with optional filters). */
+export async function listCryptoWithdrawals(
+  options: { limit?: number; asset?: string } = {},
+  apiKey?: string,
+): Promise<any[]> {
+  const params = new URLSearchParams();
+  if (options.limit) params.set("limit", String(options.limit));
+  if (options.asset) params.set("asset", options.asset);
+  const qs = params.toString() ? `?${params.toString()}` : "";
+  const data = await request<any>("GET", `/api/crypto-withdrawals${qs}`, undefined, apiKey);
+  if (Array.isArray(data)) return data;
+  return Array.isArray(data?.items) ? data.items : Array.isArray(data?.withdrawals) ? data.withdrawals : [];
 }
 
 /** Get custody deposit address for crypto deposits via CaaS. */

@@ -1,0 +1,14 @@
+{
+  "name": "ashar_precos_moedas",
+  "description": "Retorna os precos atuais de todas as moedas suportadas (BRL, USD, EUR, USDT, USDC, BTC) em USD. Fonte: OKX, cache de 30 segundos.",
+  "arguments": {
+    "type": "object",
+    "properties": {
+      "response_format": {
+        "type": "string",
+        "enum": ["markdown", "json"],
+        "default": "json"
+      }
+    }
+  }
+}
