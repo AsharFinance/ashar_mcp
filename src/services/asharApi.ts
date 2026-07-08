@@ -185,14 +185,14 @@ export function resolveProvider(chain: string): "notus" | "blindpay" | "alchemy"
 
 /** List custody deposit addresses / smart accounts of the user (Notus + BlindPay). */
 export async function listCustodyAddresses(apiKey?: string): Promise<any[]> {
-  const data = await request<any>("GET", "/api/addresses", undefined, apiKey);
+  const data = await request<any>("GET", "/api/custody/addresses", undefined, apiKey);
   if (Array.isArray(data)) return data;
   return Array.isArray(data?.addresses) ? data.addresses : [];
 }
 
 /** List supported chain/asset pairs (composicao de carteiras disponivel). */
 export async function getSupportedPairs(apiKey?: string): Promise<any[]> {
-  const data = await request<any>("GET", "/api/supported-pairs", undefined, apiKey);
+  const data = await request<any>("GET", "/api/custody/supported-pairs", undefined, apiKey);
   if (Array.isArray(data)) return data;
   return Array.isArray(data?.pairs) ? data.pairs : [];
 }
