@@ -285,19 +285,8 @@ export async function createConversion(
   },
   apiKey?: string,
 ): Promise<any> {
-  const FIAT = new Set(["BRL", "USD", "EUR"]);
-  const fromIsFiat = FIAT.has(params.fromCurrency.toUpperCase());
-  const toIsFiat = FIAT.has(params.toCurrency.toUpperCase());
-  // Detecta direcao: fiat->crypto, crypto->fiat, ou mesma categoria (default FIAT_TO_CRYPTO)
-  const direction =
-    fromIsFiat && !toIsFiat
-      ? "FIAT_TO_CRYPTO"
-      : !fromIsFiat && toIsFiat
-        ? "CRYPTO_TO_FIAT"
-        : "FIAT_TO_CRYPTO";
-
+  // direction is now auto-inferred by the API — no need to send it.
   return request<any>("POST", "/api/virtual-swap-requests", {
-    direction,
     fromCurrency: params.fromCurrency,
     toCurrency: params.toCurrency,
     amountFrom: params.amountFrom,
