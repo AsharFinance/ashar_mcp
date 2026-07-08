@@ -29,6 +29,7 @@ import { registerWebhookTools } from "./tools/webhooks.js";
 import { registerBalanceTools } from "./tools/balance.js";
 import { registerWalletTools } from "./tools/wallets.js";
 import { registerQuoteTools } from "./tools/quote.js";
+import { VERSION } from "./version.js";
 
 // ── Validate required env vars ────────────────────────────────────────────────
 
@@ -57,7 +58,7 @@ function validateConfig(): void {
 
 const server = new McpServer({
   name: "ashar-mcp-server",
-  version: "1.0.0",
+  version: VERSION,
 });
 
 // Register all tool groups

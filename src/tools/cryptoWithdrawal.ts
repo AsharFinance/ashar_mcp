@@ -17,8 +17,7 @@ import {
   listCryptoWithdrawals,
   handleApiError,
 } from "../services/asharApi.js";
-
-const CHARACTER_LIMIT = 25_000;
+import { CHARACTER_LIMIT } from "../constants.js";
 
 export function registerCryptoWithdrawalTools(server: McpServer) {
   // ── ashar_sacar_crypto ────────────────────────────────────────────────────

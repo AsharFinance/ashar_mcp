@@ -14,9 +14,7 @@ import {
   resolveProvider,
   handleApiError,
 } from "../services/asharApi.js";
-import { CHAIN_PROVIDER } from "../constants.js";
-
-const CHARACTER_LIMIT = 25_000;
+import { CHAIN_PROVIDER, CHARACTER_LIMIT } from "../constants.js";
 
 export function registerWalletTools(server: McpServer) {
   // ── ashar_listar_carteiras ───────────────────────────────────────────────

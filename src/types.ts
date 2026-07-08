@@ -153,48 +153,6 @@ export interface RemittanceOrder {
   createdAt: string;
 }
 
-// ── Wallet Composition Types (Notus + Management + CaaS) ────────────────────
-
-export interface SmartAccountInfo {
-  id: string;
-  address: string;
-  chain: string;
-  provider: "notus" | "alchemy" | "blindpay";
-  signerAddress?: string | null;
-  deployed: boolean;
-  createdAt: string;
-}
-
-export interface VirtualBalanceInfo {
-  currency: string;
-  balance: number;
-  locked: number;
-  available: number;
-}
-
-export interface WalletComposition {
-  userId: string | null;
-  virtualBalances: VirtualBalanceInfo[];
-  smartAccounts: SmartAccountInfo[];
-  depositAddresses: CryptoDepositAddress[];
-  total: {
-    smartAccounts: number;
-    depositAddresses: number;
-    currencies: number;
-  };
-}
-
-export interface ExchangeRateQuote {
-  rate: number;
-  spreadPct: number;
-  source: string;
-  fromCurrency: string;
-  toCurrency: string;
-  fromAmount?: number;
-  toAmount?: number;
-  timestamp: string;
-}
-
 // ── Pagination ────────────────────────────────────────────────────────────────
 
 export interface PaginatedResponse<T> {
@@ -473,14 +431,6 @@ export const WalletsListInputSchema = z
   })
   .strict();
 
-export const WalletDetailInputSchema = z
-  .object({
-    api_key: z.string().min(1, "api_key e obrigatorio").describe("Chave API do usuario"),
-    wallet_id: z.string().min(1, "wallet_id is required").describe("ID da carteira (Smart Account ou endereco de deposito)"),
-    response_format: z.nativeEnum(ResponseFormat).default(ResponseFormat.JSON),
-  })
-  .strict();
-
 // ── Quote / Exchange Rate Schemas ─────────────────────────────────────────────
 
 export const QuoteInputSchema = z
@@ -522,7 +472,6 @@ export const CryptoWithdrawalListInputSchema = z
   .strict();
 
 export type WalletsListInput = z.infer<typeof WalletsListInputSchema>;
-export type WalletDetailInput = z.infer<typeof WalletDetailInputSchema>;
 export type QuoteInput = z.infer<typeof QuoteInputSchema>;
 export type PricesInput = z.infer<typeof PricesInputSchema>;
 export type SupportedPairsInput = z.infer<typeof SupportedPairsInputSchema>;

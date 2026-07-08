@@ -6,6 +6,7 @@
  */
 
 import crypto from "crypto";
+import { CHAIN_PROVIDER } from "../constants.js";
 
 const API_BASE_URL = process.env.ASHAR_API_URL || "https://api.ashar.finance";
 
@@ -176,20 +177,6 @@ export async function getBalances(apiKey?: string): Promise<Record<string, numbe
 }
 
 // ── Wallet Composition (Notus + Management + CaaS) ─────────────────────────────
-
-/** Chain → provider routing (Notus para EVM eth/polygon/bsc, BlindPay para o resto). */
-const CHAIN_PROVIDER: Record<string, "notus" | "blindpay" | "alchemy"> = {
-  eth: "notus",
-  ethereum: "notus",
-  polygon: "notus",
-  bsc: "notus",
-  solana: "blindpay",
-  tron: "blindpay",
-  trx: "blindpay",
-  stellar: "blindpay",
-  base: "blindpay",
-  arbitrum: "blindpay",
-};
 
 /** Normaliza a chain para minusculo e resolve o provider correspondente. */
 export function resolveProvider(chain: string): "notus" | "blindpay" | "alchemy" {

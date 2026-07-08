@@ -26,6 +26,7 @@ export const ALL_SUPPORTED_CHAINS = [...NOTUS_CHAINS, ...BLINDPAY_CHAINS] as con
 
 /** Mapeamento chain → provider: qual provedor atende cada blockchain. */
 export const CHAIN_PROVIDER: Record<string, "notus" | "blindpay" | "alchemy"> = {
+  // Canonical (lowercase)
   eth: "notus",
   polygon: "notus",
   bsc: "notus",
@@ -34,6 +35,9 @@ export const CHAIN_PROVIDER: Record<string, "notus" | "blindpay" | "alchemy"> = 
   stellar: "blindpay",
   base: "blindpay",
   arbitrum: "blindpay",
+  // Aliases aceitos (case-insensitive no resolveProvider)
+  ethereum: "notus",
+  trx: "blindpay",
 };
 
 /**

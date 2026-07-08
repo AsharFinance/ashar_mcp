@@ -8,8 +8,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { QuoteInputSchema, PricesInputSchema, ResponseFormat } from "../types.js";
 import { getExchangeRate, getPrices, handleApiError } from "../services/asharApi.js";
-
-const CHARACTER_LIMIT = 25_000;
+import { CHARACTER_LIMIT } from "../constants.js";
 
 export function registerQuoteTools(server: McpServer) {
   // ── ashar_cotar_conversao ────────────────────────────────────────────────
