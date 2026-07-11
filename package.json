@@ -1,7 +1,7 @@
 {
   "name": "ashar-mcp-server",
-  "version": "1.1.0",
-  "description": "MCP server for Ashar Finance API — depositos, conversoes, saques e composicao de carteiras (Notus + Management + CaaS)",
+  "version": "2.0.0",
+  "description": "MCP server for Ashar Finance API — depositos, conversoes, saques, composicao de carteiras (Notus + Management + CaaS), com retry, tracing e diagnosticos",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -9,15 +9,19 @@
   },
   "scripts": {
     "start": "node dist/index.js",
-    "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
+    "prestart": "npm run build",
+    "dev": "tsx watch src/index.ts",
+    "dev:debug": "ASHAR_DEBUG=true tsx watch src/index.ts"
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.6.1",
+    "express": "^4.21.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -31,7 +35,9 @@
     "ashar",
     "finance",
     "pix",
-    "crypto"
+    "crypto",
+    "diagnostics",
+    "retry"
   ],
   "license": "UNLICENSED",
   "private": true

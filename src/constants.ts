@@ -6,6 +6,59 @@ export const CHARACTER_LIMIT = 25_000;
 /** Default API base URL (can be overridden via ASHAR_API_URL env var). */
 export const DEFAULT_API_URL = "https://api.ashar.finance";
 
+/** Default CaaS API URL. */
+export const DEFAULT_CAAS_URL = "https://api-assets.up.railway.app";
+
+/** Request timeout in milliseconds. Can be overridden via ASHAR_TIMEOUT_MS. */
+export const DEFAULT_TIMEOUT_MS = 30_000;
+
+/** Maximum retry attempts for transient failures. */
+export const MAX_RETRIES = 3;
+
+/** Base delay for exponential backoff in ms. */
+export const RETRY_BASE_DELAY_MS = 500;
+
+/** HTTP status codes that are safe to retry (transient). */
+export const RETRYABLE_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
+
+// ── Error codes for structured error handling ─────────────────────────────
+
+export enum ErrorCode {
+  /** Authentication failure — invalid/expired API key or token. */
+  AUTH_FAILED = "AUTH_FAILED",
+  /** Authorization failure — valid credentials but insufficient permissions. */
+  ACCESS_DENIED = "ACCESS_DENIED",
+  /** Request validation error — bad parameters. */
+  VALIDATION_ERROR = "VALIDATION_ERROR",
+  /** Resource not found. */
+  NOT_FOUND = "NOT_FOUND",
+  /** Rate limit exceeded. */
+  RATE_LIMITED = "RATE_LIMITED",
+  /** Network error — DNS, connection refused, TLS failure. */
+  NETWORK_ERROR = "NETWORK_ERROR",
+  /** Request timed out. */
+  TIMEOUT = "TIMEOUT",
+  /** Upstream API returned an unexpected error. */
+  UPSTREAM_ERROR = "UPSTREAM_ERROR",
+  /** Unknown / unclassified error. */
+  UNKNOWN = "UNKNOWN",
+  /** Configuration error — missing or invalid env vars. */
+  CONFIG_ERROR = "CONFIG_ERROR",
+}
+
+// ── Log levels for structured logging ──────────────────────────────────────
+
+export enum LogLevel {
+  DEBUG = 0,
+  INFO = 1,
+  WARN = 2,
+  ERROR = 3,
+}
+
+// ── Environment modes ──────────────────────────────────────────────────────
+
+export type EnvMode = "production" | "sandbox" | "development";
+
 // ── Wallet Composition: 3 provedores (Notus, BlindPay, Alchemy) ──────────
 
 /**

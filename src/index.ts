@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Ashar Finance MCP Server
+ * Ashar Finance MCP Server (v2)
  *
  * MCP server que expoe as principais operacoes da Ashar Finance:
  *   - Deposito BRL (PIX)
@@ -9,16 +9,27 @@
  *   - Deposito USDT / USDC
  *   - Cadastro de contas bancarias (receivers)
  *   - Saque fiat USD / EUR / BRL
+ *   - Health check & diagnosticos
  *
- * Autenticacao: Bearer token via ASHAR_API_KEY.
+ * Autenticacao: API Key via header x-api-key.
  *
  * Transport: stdio (local) ou HTTP (remoto) controlado por ASHAR_TRANSPORT.
+ *
+ * Env vars:
+ *   ASHAR_API_KEY      (required)  API key for management backend
+ *   ASHAR_API_URL      (optional)  Management API URL (default: api.ashar.finance)
+ *   CAAS_API_KEY       (optional)  CaaS HMAC secret or legacy key
+ *   CAAS_API_URL       (optional)  CaaS API URL (default: api-assets.up.railway.app)
+ *   ASHAR_TRANSPORT    (optional)  "stdio" (default) | "http"
+ *   ASHAR_DEBUG        (optional)  "true" to enable debug logs
+ *   ASHAR_SKIP_HEALTH  (optional)  "true" to skip startup health check
+ *   ASHAR_TIMEOUT_MS   (optional)  Request timeout in ms (default: 30000)
+ *   PORT               (optional)  HTTP port (default: 3000)
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import express from "express";
 import { registerBrlDepositTools } from "./tools/brlDeposit.js";
 import { registerConversionTools } from "./tools/conversion.js";
 import { registerCryptoWithdrawalTools } from "./tools/cryptoWithdrawal.js";
@@ -29,11 +40,22 @@ import { registerWebhookTools } from "./tools/webhooks.js";
 import { registerBalanceTools } from "./tools/balance.js";
 import { registerWalletTools } from "./tools/wallets.js";
 import { registerQuoteTools } from "./tools/quote.js";
+import { registerHealthTools } from "./tools/health.js";
 import { VERSION } from "./version.js";
+import { healthCheck, getDiagnostics } from "./services/asharApi.js";
+
+// ── Logger ────────────────────────────────────────────────────────────────────
+
+const DEBUG = process.env.ASHAR_DEBUG === "true";
+
+function startupLog(msg: string): void {
+  const ts = new Date().toISOString();
+  console.error(`[ashar-mcp] ${ts} ${msg}`);
+}
 
 // ── Validate required env vars ────────────────────────────────────────────────
 
-function validateConfig(): void {
+function validateConfig(): { valid: boolean; issues: string[] } {
   const issues: string[] = [];
 
   if (!process.env.ASHAR_API_KEY) {
@@ -46,11 +68,48 @@ function validateConfig(): void {
   }
 
   if (issues.length > 0) {
-    console.error("Configuration errors:");
+    startupLog("ERROR: Configuration issues:");
     for (const issue of issues) {
-      console.error(`  - ${issue}`);
+      startupLog(`  - ${issue}`);
     }
-    process.exit(1);
+  }
+
+  return { valid: issues.length === 0, issues };
+}
+
+// ── Startup Health Check ──────────────────────────────────────────────────────
+
+async function runStartupDiagnostics(): Promise<void> {
+  const skipHealth = process.env.ASHAR_SKIP_HEALTH === "true";
+  if (skipHealth) {
+    startupLog("Skipping startup health check (ASHAR_SKIP_HEALTH=true)");
+    return;
+  }
+
+  startupLog("Running startup diagnostics...");
+
+  const cfg = validateConfig();
+  if (!cfg.valid) {
+    startupLog("WARNING: MCP started with configuration issues — some tools may not work.");
+    return;
+  }
+
+  try {
+    const result = await healthCheck();
+    if (result.ok) {
+      startupLog(`OK — API connectivity verified (${result.latencyMs}ms)`);
+    } else {
+      startupLog(`WARNING: Could not reach API — ${result.error}`);
+      startupLog("  The MCP server is running but API calls may fail.");
+      startupLog("  Check ASHAR_API_KEY and ASHAR_API_URL.");
+    }
+  } catch (err: any) {
+    startupLog(`WARNING: Health check failed: ${err.message}`);
+  }
+
+  if (DEBUG) {
+    const diag = getDiagnostics();
+    startupLog(`Debug info: ${JSON.stringify(diag)}`);
   }
 }
 
@@ -61,7 +120,7 @@ const server = new McpServer({
   version: VERSION,
 });
 
-// Register all tool groups
+// Register all tool groups (total: 27 ferramentas em 11 grupos)
 registerBalanceTools(server);
 registerWalletTools(server);
 registerBrlDepositTools(server);
@@ -72,27 +131,37 @@ registerCryptoDepositTools(server);
 registerBankAccountTools(server);
 registerFiatWithdrawalTools(server);
 registerWebhookTools(server);
+registerHealthTools(server); // ashar_health + ashar_diagnostics
 
 // ── stdio transport (default for local use) ───────────────────────────────────
 
 async function runStdio(): Promise<void> {
-  validateConfig();
+  await runStartupDiagnostics();
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("[ashar-mcp] running via stdio");
+  startupLog(`v${VERSION} running via stdio`);
 }
 
 // ── Streamable HTTP transport (for remote/cloud deployments) ──────────────────
 
 async function runHttp(): Promise<void> {
-  validateConfig();
+  await runStartupDiagnostics();
 
-  // Dynamic import for express
+  // Dynamic import for express (optional dependency, used only in HTTP mode)
+  let express: any;
+  try {
+    express = (await import("express")).default;
+  } catch {
+    startupLog("ERROR: express is required for HTTP transport. Install it with: npm install express");
+    startupLog("       Or switch to stdio mode with ASHAR_TRANSPORT=stdio");
+    process.exit(1);
+  }
+
   const app = express();
   app.use(express.json());
 
-  app.post("/mcp", async (req, res) => {
+  app.post("/mcp", async (req: any, res: any) => {
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
       enableJsonResponse: true,
@@ -105,28 +174,34 @@ async function runHttp(): Promise<void> {
   });
 
   // Health check endpoint
-  app.get("/health", (_req, res) => {
-    res.json({ status: "ok", name: "ashar-mcp-server", version: "1.0.0" });
+  app.get("/health", (_req: any, res: any) => {
+    res.json({
+      status: "ok",
+      name: "ashar-mcp-server",
+      version: VERSION,
+      timestamp: new Date().toISOString(),
+    });
   });
 
   const port = parseInt(process.env.PORT || "3000", 10);
   app.listen(port, () => {
-    console.error(`[ashar-mcp] running on http://localhost:${port}/mcp`);
+    startupLog(`v${VERSION} running on http://localhost:${port}/mcp`);
+    startupLog(`Health check: http://localhost:${port}/health`);
   });
 }
 
-// ── Entry point ────────────────────────────────────────────────────────────────
+// ── Entry point ───────────────────────────────────────────────────────────────
 
 const transport = process.env.ASHAR_TRANSPORT || "stdio";
 
 if (transport === "http") {
   runHttp().catch((error) => {
-    console.error("[ashar-mcp] Fatal error:", error);
+    startupLog(`Fatal error: ${error.message}`);
     process.exit(1);
   });
 } else {
   runStdio().catch((error) => {
-    console.error("[ashar-mcp] Fatal error:", error);
+    startupLog(`Fatal error: ${error.message}`);
     process.exit(1);
   });
 }

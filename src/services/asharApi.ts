@@ -1,24 +1,50 @@
 /**
- * Ashar Finance API Client
+ * Ashar Finance API Client (v2)
  *
- * Encapsulates all HTTP calls to the Ashar management backend.
- * Authentication is done via x-api-key header.
+ * Encapsulates all HTTP calls to the Ashar management backend and CaaS.
+ *
+ * Features:
+ *   - Exponential backoff retry for transient failures (5xx, 429, network errors)
+ *   - Request tracing with unique IDs for debugging
+ *   - Structured error classification via ErrorCode enum
+ *   - Configurable timeouts
+ *   - CaaS HMAC authentication with caching
  */
 
 import crypto from "crypto";
-import { CHAIN_PROVIDER } from "../constants.js";
+import { CHAIN_PROVIDER, ErrorCode, MAX_RETRIES, RETRY_BASE_DELAY_MS, RETRYABLE_STATUSES } from "../constants.js";
+
+// ── Configuration ─────────────────────────────────────────────────────────────
 
 const API_BASE_URL = process.env.ASHAR_API_URL || "https://api.ashar.finance";
-
 const CAAS_API_URL = process.env.CAAS_API_URL || "https://api-assets.up.railway.app";
-
-/** Server-level fallback key. Prefer per-request apiKey for user isolation. */
 const DEFAULT_API_KEY = process.env.ASHAR_API_KEY || "";
-
-/** Server-level CaaS HMAC secret or pre-generated legacy API key (for custody operations). */
 const CAAS_API_KEY = process.env.CAAS_API_KEY || "";
+const TIMEOUT_MS = parseInt(process.env.ASHAR_TIMEOUT_MS || "30000", 10);
+const DEBUG_MODE = process.env.ASHAR_DEBUG === "true";
 
-// ── CaaS Legacy API Key Generator ──────────────────────────────────────────
+// ── Logger ────────────────────────────────────────────────────────────────────
+
+function log(level: "debug" | "info" | "warn" | "error", msg: string, data?: any): void {
+  if (level === "debug" && !DEBUG_MODE) return;
+  const timestamp = new Date().toISOString();
+  const prefix = `[ashar-api][${level.toUpperCase()}]`;
+  if (data !== undefined) {
+    console.error(`${timestamp} ${prefix} ${msg}`, data);
+  } else {
+    console.error(`${timestamp} ${prefix} ${msg}`);
+  }
+}
+
+// ── Request Tracing ───────────────────────────────────────────────────────────
+
+let _requestSeq = 0;
+function nextRequestId(): string {
+  _requestSeq += 1;
+  return `req_${Date.now().toString(36)}_${_requestSeq.toString(36)}`;
+}
+
+// ── CaaS Legacy API Key Generator ─────────────────────────────────────────────
 
 let _cachedCaaSKey: string | null = null;
 let _cachedCaaSKeyExpiresAt: number = 0;
@@ -32,12 +58,10 @@ let _cachedCaaSKeyExpiresAt: number = 0;
  * the HMAC secret and a key is generated on the fly, cached for 23h.
  */
 function getCaaSAuthHeader(): string {
-  // Already a pre-generated legacy key (format: header.payload.signature)
   if (CAAS_API_KEY.split(".").length === 3) {
     return CAAS_API_KEY;
   }
 
-  // Check cache (keys valid for 23 hours, regenerate with 1h buffer)
   const now = Date.now();
   if (_cachedCaaSKey && now < _cachedCaaSKeyExpiresAt) {
     return _cachedCaaSKey;
@@ -53,11 +77,7 @@ function getCaaSAuthHeader(): string {
 
   const exp = Math.floor(now / 1000) + 86400; // 24h from now
   const payload = Buffer.from(
-    JSON.stringify({
-      sub: "ashar-mcp",
-      role: "admin",
-      exp,
-    }),
+    JSON.stringify({ sub: "ashar-mcp", role: "admin", exp }),
   ).toString("base64url");
 
   const signature = crypto
@@ -69,22 +89,166 @@ function getCaaSAuthHeader(): string {
     .replace(/\//g, "_");
 
   _cachedCaaSKey = `${header}.${payload}.${signature}`;
-  _cachedCaaSKeyExpiresAt = exp * 1000 - 3600_000; // regenerate 1h before expiry
+  _cachedCaaSKeyExpiresAt = exp * 1000 - 3600_000;
 
   return _cachedCaaSKey;
+}
+
+// ── Structured Error ──────────────────────────────────────────────────────────
+
+export interface ApiErrorDetail {
+  code: ErrorCode;
+  message: string;
+  status?: number;
+  requestId?: string;
+  retryable: boolean;
+  suggestion?: string;
 }
 
 export class AsharApiError extends Error {
   status: number;
   body: any;
+  code: ErrorCode;
+  requestId?: string;
 
-  constructor(message: string, status: number, body?: any) {
-    super(message);
+  constructor(detail: ApiErrorDetail) {
+    super(detail.message);
     this.name = "AsharApiError";
-    this.status = status;
-    this.body = body;
+    this.status = detail.status ?? 0;
+    this.code = detail.code;
+    this.requestId = detail.requestId;
+    this.body = detail;
   }
 }
+
+function classifyNetworkError(err: Error): ApiErrorDetail {
+  const msg = err.message.toLowerCase();
+  if (msg.includes("timeout") || msg.includes("abort") || msg.includes("aborted")) {
+    return { code: ErrorCode.TIMEOUT, message: err.message, retryable: true, suggestion: "A API demorou a responder. Tente novamente." };
+  }
+  if (msg.includes("fetch failed") || msg.includes("econnrefused") || msg.includes("enotfound") || msg.includes("dns")) {
+    return { code: ErrorCode.NETWORK_ERROR, message: err.message, retryable: true, suggestion: "Falha na rede ao conectar na API. Verifique sua conexao." };
+  }
+  return { code: ErrorCode.UNKNOWN, message: err.message, retryable: false };
+}
+
+// ── Core Request with Retry ───────────────────────────────────────────────────
+
+async function requestWithRetry<T>(
+  method: "GET" | "POST" | "PUT" | "DELETE",
+  path: string,
+  body?: Record<string, unknown>,
+  apiKey?: string,
+  baseUrl: string = API_BASE_URL,
+  extraHeaders: Record<string, string> = {},
+): Promise<T> {
+  const requestId = nextRequestId();
+  const url = `${baseUrl.replace(/\/+$/, "")}${path}`;
+  const startTime = Date.now();
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    "X-Request-Id": requestId,
+    ...extraHeaders,
+  };
+
+  // Auth
+  const key = apiKey || DEFAULT_API_KEY;
+  if (key && !headers["x-api-key"]) {
+    headers["x-api-key"] = key;
+  }
+
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      log("debug", `[${requestId}] ${method} ${url} (attempt ${attempt}/${MAX_RETRIES})`);
+
+      const res = await fetch(url, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+
+      const elapsed = Date.now() - startTime;
+      const data: any = await res.json().catch(() => null);
+
+      if (res.ok) {
+        log("debug", `[${requestId}] ${res.status} OK (${elapsed}ms)`);
+        return data as T;
+      }
+
+      // Non-OK response
+      const errorDetail: ApiErrorDetail = {
+        code: httpStatusToErrorCode(res.status),
+        message: data?.error || data?.message || `HTTP ${res.status}`,
+        status: res.status,
+        requestId,
+        retryable: RETRYABLE_STATUSES.has(res.status),
+      };
+
+      log("warn", `[${requestId}] ${res.status} FAILED (${elapsed}ms): ${errorDetail.message}`, {
+        attempt,
+        retryable: errorDetail.retryable,
+      });
+
+      // Don't retry non-retryable errors (4xx except 408/429)
+      if (!errorDetail.retryable) {
+        throw new AsharApiError(errorDetail);
+      }
+
+      lastError = new AsharApiError(errorDetail);
+
+    } catch (err: any) {
+      if (err instanceof AsharApiError) {
+        lastError = err;
+        if (!err.code || !RETRYABLE_STATUSES.has(err.status)) {
+          throw err;
+        }
+      } else {
+        // Network error — always retry
+        const detail = classifyNetworkError(err);
+        detail.requestId = requestId;
+        lastError = new AsharApiError(detail);
+        log("warn", `[${requestId}] network error (attempt ${attempt}/${MAX_RETRIES}): ${err.message}`);
+      }
+    }
+
+    // Exponential backoff before retry
+    if (attempt < MAX_RETRIES) {
+      const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
+      log("debug", `[${requestId}] retrying in ${delay}ms...`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+
+  // Exhausted retries
+  const elapsed = Date.now() - startTime;
+  log("error", `[${requestId}] exhausted ${MAX_RETRIES} retries after ${elapsed}ms`);
+  throw lastError || new AsharApiError({
+    code: ErrorCode.UNKNOWN,
+    message: "Request failed after all retries",
+    requestId,
+    retryable: false,
+  });
+}
+
+function httpStatusToErrorCode(status: number): ErrorCode {
+  switch (status) {
+    case 400: return ErrorCode.VALIDATION_ERROR;
+    case 401: return ErrorCode.AUTH_FAILED;
+    case 403: return ErrorCode.ACCESS_DENIED;
+    case 404: return ErrorCode.NOT_FOUND;
+    case 429: return ErrorCode.RATE_LIMITED;
+    default:
+      if (status >= 500) return ErrorCode.UPSTREAM_ERROR;
+      return ErrorCode.UNKNOWN;
+  }
+}
+
+// ── Convenience wrappers ──────────────────────────────────────────────────────
 
 async function request<T>(
   method: "GET" | "POST" | "PUT" | "DELETE",
@@ -92,74 +256,20 @@ async function request<T>(
   body?: Record<string, unknown>,
   apiKey?: string,
 ): Promise<T> {
-  const url = `${API_BASE_URL.replace(/\/+$/, "")}${path}`;
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  };
-
-  const key = apiKey || DEFAULT_API_KEY;
-  if (key) {
-    headers["x-api-key"] = key;
-  }
-
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-    signal: AbortSignal.timeout(30_000),
-  });
-
-  const data: any = await res.json().catch(() => null);
-
-  if (!res.ok) {
-    throw new AsharApiError(
-      data?.error || data?.message || `HTTP ${res.status}`,
-      res.status,
-      data,
-    );
-  }
-
-  return data as T;
+  return requestWithRetry<T>(method, path, body, apiKey, API_BASE_URL);
 }
 
-/** CaaS-specific request (for custody/deposit-address operations). */
 async function caasRequest<T>(
   method: "GET" | "POST" | "PUT" | "DELETE",
   path: string,
   body?: Record<string, unknown>,
 ): Promise<T> {
-  const url = `${CAAS_API_URL.replace(/\/+$/, "")}${path}`;
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  };
-
   const authKey = getCaaSAuthHeader();
+  const extraHeaders: Record<string, string> = {};
   if (authKey) {
-    headers["x-api-key"] = authKey;
+    extraHeaders["x-api-key"] = authKey;
   }
-
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-    signal: AbortSignal.timeout(30_000),
-  });
-
-  const data: any = await res.json().catch(() => null);
-
-  if (!res.ok) {
-    throw new AsharApiError(
-      data?.error || data?.message || `CaaS HTTP ${res.status}`,
-      res.status,
-      data,
-    );
-  }
-
-  return data as T;
+  return requestWithRetry<T>(method, path, body, undefined, CAAS_API_URL, extraHeaders);
 }
 
 // ── Public API ─────────────────────────────────────────────────────────────────
@@ -223,11 +333,8 @@ export async function getExchangeRate(
   const f = from.toUpperCase();
   const t = to.toUpperCase();
 
-  // Same currency
   if (f === t) return { rate: 1, spreadPct: 0, source: "spot" };
 
-  // EUR pairs: backend /api/exchange-rate does not support EUR.
-  // Fallback: compute cross-rate via /api/prices (all prices in USD).
   if (f === "EUR" || t === "EUR") {
     const prices = await getPrices(apiKey);
     const usdPerFrom = f === "EUR" ? (prices.EUR ?? 1.07) : (prices[f] ?? 1);
@@ -240,7 +347,6 @@ export async function getExchangeRate(
     };
   }
 
-  // Non-EUR pairs: use direct /api/exchange-rate endpoint
   const data = await request<any>(
     "GET",
     `/api/exchange-rate?from=${encodeURIComponent(f)}&to=${encodeURIComponent(t)}`,
@@ -285,7 +391,6 @@ export async function createConversion(
   },
   apiKey?: string,
 ): Promise<any> {
-  // direction is now auto-inferred by the API — no need to send it.
   return request<any>("POST", "/api/virtual-swap-requests", {
     fromCurrency: params.fromCurrency,
     toCurrency: params.toCurrency,
@@ -324,7 +429,7 @@ export async function getCryptoWithdrawalStatus(externalId: string, apiKey?: str
   );
 }
 
-/** List crypto withdrawal history (via unified activity feed, filtered to crypto withdrawals). */
+/** List crypto withdrawal history. */
 export async function listCryptoWithdrawals(
   options: { limit?: number; asset?: string } = {},
   apiKey?: string,
@@ -341,31 +446,24 @@ export async function listCryptoWithdrawals(
     apiKey,
   );
   const entries = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
-  // Filter to only crypto withdrawals (type === CRYPTO_WITHDRAWAL)
   return entries.filter((e: any) => e.type === "CRYPTO_WITHDRAWAL");
 }
 
-/** Get custody deposit address for crypto deposits via CaaS. */
 /** Generate a crypto deposit address via management (resolves user from api_key and proxies to CaaS). */
 export async function getCryptoDepositAddress(
   asset: string,
   chain: string,
   apiKey?: string,
 ): Promise<any> {
-  return request<any>("POST", "/api/ashar/deposits/crypto/address", {
-    asset,
-    chain,
-  }, apiKey);
+  return request<any>("POST", "/api/ashar/deposits/crypto/address", { asset, chain }, apiKey);
 }
 
 // ── Bank Accounts CRUD ─────────────────────────────────────────────────────────
 
-/** List user bank accounts. */
 export async function listBankAccounts(apiKey?: string): Promise<any[]> {
   return request<any>("GET", "/api/banking/accounts", undefined, apiKey);
 }
 
-/** Create a bank account (receiver). */
 export async function createBankAccount(
   data: {
     label: string;
@@ -388,24 +486,20 @@ export async function createBankAccount(
   return request<any>("POST", "/api/banking/accounts", data as Record<string, unknown>, apiKey);
 }
 
-/** Update a bank account. */
 export async function updateBankAccount(id: string, data: Record<string, unknown>, apiKey?: string): Promise<any> {
   return request<any>("PUT", `/api/banking/accounts/${encodeURIComponent(id)}`, data, apiKey);
 }
 
-/** Delete a bank account. */
 export async function deleteBankAccount(id: string, apiKey?: string): Promise<any> {
   return request<any>("DELETE", `/api/banking/accounts/${encodeURIComponent(id)}`, undefined, apiKey);
 }
 
 // ── Fiat Remittance (Withdrawal) ───────────────────────────────────────────────
 
-/** List user remittance (fiat withdrawal) orders. */
 export async function listRemittances(apiKey?: string): Promise<any[]> {
   return request<any>("GET", "/api/banking/remittances", undefined, apiKey);
 }
 
-/** Create a fiat withdrawal (remittance order). */
 export async function createRemittance(
   data: {
     amount: number;
@@ -442,12 +536,10 @@ export async function createRemittance(
 
 // ── Webhooks ───────────────────────────────────────────────────────────────────
 
-/** List user webhooks. */
 export async function listWebhooks(apiKey?: string): Promise<any[]> {
   return request<any>("GET", "/api/webhooks", undefined, apiKey);
 }
 
-/** Create a webhook. */
 export async function createWebhook(
   data: { label: string; url: string; events?: string },
   apiKey?: string,
@@ -455,41 +547,79 @@ export async function createWebhook(
   return request<any>("POST", "/api/webhooks", data as Record<string, unknown>, apiKey);
 }
 
-/** Delete a webhook. */
 export async function deleteWebhook(id: string, apiKey?: string): Promise<any> {
   return request<any>("DELETE", `/api/webhooks/${encodeURIComponent(id)}`, undefined, apiKey);
 }
 
-/** Test a webhook by sending a ping event. */
 export async function testWebhook(id: string, apiKey?: string): Promise<any> {
   return request<any>("POST", `/api/webhooks/${encodeURIComponent(id)}/test`, undefined, apiKey);
 }
 
-/** Handle API errors consistently. */
+// ── Health Check ───────────────────────────────────────────────────────────────
+
+/** Quick connectivity test to the management API. */
+export async function healthCheck(): Promise<{ ok: boolean; latencyMs: number; error?: string }> {
+  const start = Date.now();
+  try {
+    const data = await requestWithRetry<any>("GET", "/api/prices", undefined, DEFAULT_API_KEY, API_BASE_URL);
+    return { ok: true, latencyMs: Date.now() - start };
+  } catch (err: any) {
+    return { ok: false, latencyMs: Date.now() - start, error: err.message };
+  }
+}
+
+// ── Error Handler ─────────────────────────────────────────────────────────────
+
+/**
+ * Translate an API/network error into a user-friendly Portuguese message
+ * with actionable suggestions.
+ */
 export function handleApiError(error: unknown): string {
   if (error instanceof AsharApiError) {
-    switch (error.status) {
-      case 400:
-        return `Erro de validacao: ${error.message}. Verifique os parametros enviados.`;
-      case 401:
-        return "Erro: Nao autenticado. Verifique se ASHAR_API_KEY esta configurada corretamente.";
-      case 403:
-        return "Erro: Acesso negado. Voce nao tem permissao para esta operacao.";
-      case 404:
-        return `Erro: Recurso nao encontrado. Verifique o ID informado.`;
-      case 429:
-        return "Erro: Limite de requisicoes excedido. Aguarde antes de tentar novamente.";
+    const detail = error.body as ApiErrorDetail | undefined;
+    const suggestion = detail?.suggestion ? `\n💡 ${detail.suggestion}` : "";
+
+    switch (error.code) {
+      case ErrorCode.AUTH_FAILED:
+        return `Erro de autenticacao: API key invalida ou expirada. Verifique se ASHAR_API_KEY esta configurada corretamente.${suggestion}`;
+      case ErrorCode.ACCESS_DENIED:
+        return `Erro: Acesso negado. Sua conta nao tem permissao para esta operacao.${suggestion}`;
+      case ErrorCode.VALIDATION_ERROR:
+        return `Erro de validacao: ${error.message}. Verifique os parametros enviados.${suggestion}`;
+      case ErrorCode.NOT_FOUND:
+        return `Recurso nao encontrado: ${error.message}. Verifique o ID informado.${suggestion}`;
+      case ErrorCode.RATE_LIMITED:
+        return `Limite de requisicoes excedido. Aguarde alguns segundos e tente novamente.${suggestion}`;
+      case ErrorCode.TIMEOUT:
+        return `Timeout: a API Ashar demorou para responder (>${TIMEOUT_MS / 1000}s). Tente novamente.${suggestion}`;
+      case ErrorCode.NETWORK_ERROR:
+        return `Erro de rede ao conectar na API Ashar. Verifique sua conexao com a internet. Se o problema persistir, a API pode estar indisponivel.${suggestion}`;
+      case ErrorCode.UPSTREAM_ERROR:
+        return `Erro interno na API Ashar (${error.status}). Tente novamente em instantes.${suggestion}`;
       default:
-        return `Erro da API Ashar (HTTP ${error.status}): ${error.message}`;
+        return `Erro da API Ashar (${error.status || "desconhecido"}): ${error.message}${suggestion}`;
     }
   }
 
   if (error instanceof Error) {
-    if (error.message.includes("timeout") || error.message.includes("abort")) {
-      return "Erro: Timeout ao comunicar com a API Ashar. Tente novamente.";
-    }
     return `Erro inesperado: ${error.message}`;
   }
 
   return `Erro inesperado: ${String(error)}`;
+}
+
+// ── Diagnostic Info ────────────────────────────────────────────────────────────
+
+/** Gather diagnostic information about the MCP server configuration. */
+export function getDiagnostics(): Record<string, unknown> {
+  return {
+    apiBaseUrl: API_BASE_URL,
+    caasApiUrl: CAAS_API_URL,
+    hasApiKey: Boolean(DEFAULT_API_KEY),
+    hasCaasKey: Boolean(CAAS_API_KEY),
+    timeoutMs: TIMEOUT_MS,
+    maxRetries: MAX_RETRIES,
+    debugMode: DEBUG_MODE,
+    defaultApiKeyHint: DEFAULT_API_KEY ? `${DEFAULT_API_KEY.substring(0, 8)}...` : "not set",
+  };
 }

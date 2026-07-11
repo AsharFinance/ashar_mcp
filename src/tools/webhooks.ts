@@ -68,7 +68,7 @@ Exemplos de uso:
     },
     async (params) => {
       try {
-        const webhooks = await listWebhooks();
+        const webhooks = await listWebhooks(params.api_key);
 
         if (!webhooks.length) {
           return {
@@ -252,7 +252,7 @@ Exemplos de uso:
     },
     async (params) => {
       try {
-        await deleteWebhook(params.webhook_id);
+        await deleteWebhook(params.webhook_id, params.api_key);
 
         let text: string;
         if (params.response_format === ResponseFormat.MARKDOWN) {
