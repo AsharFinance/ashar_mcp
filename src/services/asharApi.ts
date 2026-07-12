@@ -57,7 +57,7 @@ let _cachedCaaSKeyExpiresAt: number = 0;
  * treated as a pre-generated key and used directly. Otherwise it's treated as
  * the HMAC secret and a key is generated on the fly, cached for 23h.
  */
-function getCaaSAuthHeader(): string {
+export function getCaaSAuthHeader(): string {
   if (CAAS_API_KEY.split(".").length === 3) {
     return CAAS_API_KEY;
   }
@@ -121,7 +121,7 @@ export class AsharApiError extends Error {
   }
 }
 
-function classifyNetworkError(err: Error): ApiErrorDetail {
+export function classifyNetworkError(err: Error): ApiErrorDetail {
   const msg = err.message.toLowerCase();
   if (msg.includes("timeout") || msg.includes("abort") || msg.includes("aborted")) {
     return { code: ErrorCode.TIMEOUT, message: err.message, retryable: true, suggestion: "A API demorou a responder. Tente novamente." };
@@ -235,7 +235,7 @@ async function requestWithRetry<T>(
   });
 }
 
-function httpStatusToErrorCode(status: number): ErrorCode {
+export function httpStatusToErrorCode(status: number): ErrorCode {
   switch (status) {
     case 400: return ErrorCode.VALIDATION_ERROR;
     case 401: return ErrorCode.AUTH_FAILED;

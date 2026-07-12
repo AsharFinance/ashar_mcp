@@ -14,7 +14,13 @@
     "prebuild": "npm run clean",
     "prestart": "npm run build",
     "dev": "tsx watch src/index.ts",
-    "dev:debug": "ASHAR_DEBUG=true tsx watch src/index.ts"
+    "dev:debug": "ASHAR_DEBUG=true tsx watch src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run --dir tests/unit",
+    "test:integration": "vitest run --dir tests/integration",
+    "test:e2e": "vitest run --dir tests/e2e",
+    "test:coverage": "vitest run --coverage"
   },
   "engines": {
     "node": ">=18"
@@ -27,8 +33,10 @@
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^22.10.0",
+    "@vitest/coverage-v8": "^4.1.10",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.10"
   },
   "keywords": [
     "mcp",
