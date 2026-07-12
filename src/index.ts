@@ -43,15 +43,10 @@ import { registerQuoteTools } from "./tools/quote.js";
 import { registerHealthTools } from "./tools/health.js";
 import { VERSION } from "./version.js";
 import { healthCheck, getDiagnostics } from "./services/asharApi.js";
+import { logger, registerUnhandledErrorHandlers } from "./utils/logger.js";
 
-// ── Logger ────────────────────────────────────────────────────────────────────
-
-const DEBUG = process.env.ASHAR_DEBUG === "true";
-
-function startupLog(msg: string): void {
-  const ts = new Date().toISOString();
-  console.error(`[ashar-mcp] ${ts} ${msg}`);
-}
+// Register global unhandled error handlers early
+registerUnhandledErrorHandlers();
 
 // ── Validate required env vars ────────────────────────────────────────────────
 
@@ -68,10 +63,7 @@ function validateConfig(): { valid: boolean; issues: string[] } {
   }
 
   if (issues.length > 0) {
-    startupLog("ERROR: Configuration issues:");
-    for (const issue of issues) {
-      startupLog(`  - ${issue}`);
-    }
+    logger.warn("Configuration errors", { issues });
   }
 
   return { valid: issues.length === 0, issues };
@@ -82,34 +74,33 @@ function validateConfig(): { valid: boolean; issues: string[] } {
 async function runStartupDiagnostics(): Promise<void> {
   const skipHealth = process.env.ASHAR_SKIP_HEALTH === "true";
   if (skipHealth) {
-    startupLog("Skipping startup health check (ASHAR_SKIP_HEALTH=true)");
+    logger.info("Skipping startup health check (ASHAR_SKIP_HEALTH=true)");
     return;
   }
 
-  startupLog("Running startup diagnostics...");
+  logger.info("Running startup diagnostics...");
 
   const cfg = validateConfig();
   if (!cfg.valid) {
-    startupLog("WARNING: MCP started with configuration issues — some tools may not work.");
+    logger.warn("MCP started with configuration issues — some tools may not work.");
     return;
   }
 
   try {
     const result = await healthCheck();
     if (result.ok) {
-      startupLog(`OK — API connectivity verified (${result.latencyMs}ms)`);
+      logger.info("API connectivity verified", { latencyMs: result.latencyMs });
     } else {
-      startupLog(`WARNING: Could not reach API — ${result.error}`);
-      startupLog("  The MCP server is running but API calls may fail.");
-      startupLog("  Check ASHAR_API_KEY and ASHAR_API_URL.");
+      logger.warn("Could not reach API", { error: result.error });
+      logger.warn("The MCP server is running but API calls may fail. Check ASHAR_API_KEY and ASHAR_API_URL.");
     }
   } catch (err: any) {
-    startupLog(`WARNING: Health check failed: ${err.message}`);
+    logger.warn("Health check failed", err);
   }
 
-  if (DEBUG) {
+  if (process.env.ASHAR_DEBUG === "true") {
     const diag = getDiagnostics();
-    startupLog(`Debug info: ${JSON.stringify(diag)}`);
+    logger.info("Debug diagnostics", diag as Record<string, unknown>);
   }
 }
 
@@ -140,7 +131,7 @@ async function runStdio(): Promise<void> {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  startupLog(`v${VERSION} running via stdio`);
+  logger.info("MCP server running via stdio", { version: VERSION });
 }
 
 // ── Streamable HTTP transport (for remote/cloud deployments) ──────────────────
@@ -153,8 +144,8 @@ async function runHttp(): Promise<void> {
   try {
     express = (await import("express")).default;
   } catch {
-    startupLog("ERROR: express is required for HTTP transport. Install it with: npm install express");
-    startupLog("       Or switch to stdio mode with ASHAR_TRANSPORT=stdio");
+    logger.fatal("express is required for HTTP transport. Install it with: npm install express");
+    logger.fatal("Or switch to stdio mode with ASHAR_TRANSPORT=stdio");
     process.exit(1);
   }
 
@@ -185,8 +176,7 @@ async function runHttp(): Promise<void> {
 
   const port = parseInt(process.env.PORT || "3000", 10);
   app.listen(port, () => {
-    startupLog(`v${VERSION} running on http://localhost:${port}/mcp`);
-    startupLog(`Health check: http://localhost:${port}/health`);
+    logger.info("MCP server running via HTTP", { port, version: VERSION });
   });
 }
 
@@ -196,12 +186,12 @@ const transport = process.env.ASHAR_TRANSPORT || "stdio";
 
 if (transport === "http") {
   runHttp().catch((error) => {
-    startupLog(`Fatal error: ${error.message}`);
+    logger.fatal("Fatal error — process will exit", error);
     process.exit(1);
   });
 } else {
   runStdio().catch((error) => {
-    startupLog(`Fatal error: ${error.message}`);
+    logger.fatal("Fatal error — process will exit", error);
     process.exit(1);
   });
 }
